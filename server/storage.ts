@@ -10,7 +10,12 @@ export class MemStorage implements IStorage {
   private currentId: number;
 
   constructor() {
-    this.messages = [];
+    this.messages = [{
+      id: 0,
+      role: "assistant",
+      content: require("../client/src/data/portfolio.json").intro.chatIntro,
+      timestamp: new Date()
+    }];
     this.currentId = 1;
   }
 

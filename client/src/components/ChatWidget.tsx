@@ -146,15 +146,7 @@ export default function ChatWidget({
   const isHomePage = location === "/";
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat"],
-    initialData: [
-      {
-        id: 0,
-        role: "assistant",
-        content: portfolioData.intro.chatIntro,
-        timestamp: new Date(),
-      },
-    ],
+    queryKey: ["/api/chat"]
   });
 
   const mutation = useMutation({
