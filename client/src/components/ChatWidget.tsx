@@ -3,11 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Send } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { MessageCircle, X, Send, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import type { ChatMessage } from "@shared/schema";
 
 interface ChatWidgetProps {
@@ -24,14 +30,21 @@ export default function ChatWidget({
   onFirstMessage 
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(embedded);
-  const [message, setMessage] = useState("");
+  const [location] = useLocation();
+  const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const isHomePage = location === "/";
 
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
+  const { data: messages = [], refetch } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat"],
   });
+
+  const resetChat = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+    await refetch();
+  };
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -55,7 +68,9 @@ export default function ChatWidget({
         onFirstMessage();
       }
       queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
-      setMessage("");
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     },
     onError: (error) => {
       console.error("Mutation error:", error);
@@ -67,10 +82,14 @@ export default function ChatWidget({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (message.trim()) {
-      mutation.mutate(message);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const message = formData.get("message") as string;
+    if (message?.trim()) {
+      mutation.mutate(message.trim());
+      form.reset();
     }
   };
 
@@ -144,10 +163,11 @@ export default function ChatWidget({
       <form onSubmit={handleSubmit} className="p-4">
         <div className="flex gap-2">
           <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            ref={inputRef}
+            name="message"
             placeholder="Type a message..."
             disabled={mutation.isPending}
+            autoComplete="off"
           />
           <Button type="submit" size="icon" disabled={mutation.isPending}>
             <Send className="h-4 w-4" />
@@ -164,10 +184,46 @@ export default function ChatWidget({
       </div>
     ) : (
       <Card className="w-full h-full flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
+          <div className="flex gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={resetChat}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Restart chat</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close chat</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
         <ChatContent />
       </Card>
     );
   }
+
+  if (isHomePage || isOpen) return null;
 
   return (
     <>
@@ -190,13 +246,37 @@ export default function ChatWidget({
             <Card className="w-[350px] h-[500px] flex flex-col">
               <div className="flex items-center justify-between p-4 border-b">
                 <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={resetChat}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Restart chat</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Close chat</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
               <ChatContent />
             </Card>
