@@ -187,16 +187,8 @@ export default function ChatWidget({
   });
 
   const resetChat = async () => {
+    await apiRequest("POST", "/api/chat/reset");
     await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
-    await queryClient.setQueryData(["/api/chat"], [
-      {
-        id: 0,
-        role: "assistant",
-        content: portfolioData.intro.chatIntro,
-        timestamp: new Date(),
-      },
-    ]);
-
   };
 
   useEffect(() => {

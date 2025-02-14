@@ -6,6 +6,17 @@ import { insertChatMessageSchema } from "@shared/schema";
 import portfolioData from "../client/src/data/portfolio.json";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.post("/api/chat/reset", async (_req, res) => {
+    try {
+      await storage.resetMessages();
+      const messages = await storage.getMessages();
+      res.json(messages);
+    } catch (error) {
+      console.error("Error resetting messages:", error);
+      res.status(500).json({ message: "Failed to reset messages" });
+    }
+  });
+
   app.get("/api/chat", async (_req, res) => {
     try {
       const messages = await storage.getMessages();

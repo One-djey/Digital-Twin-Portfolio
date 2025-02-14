@@ -23,6 +23,16 @@ export class MemStorage implements IStorage {
     return this.messages;
   }
 
+  async resetMessages(): Promise<void> {
+    this.messages = [{
+      id: 0,
+      role: "assistant", 
+      content: require("../client/src/data/portfolio.json").intro.chatIntro,
+      timestamp: new Date()
+    }];
+    this.currentId = 1;
+  }
+
   async createMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
     const message: ChatMessage = {
       id: this.currentId++,
