@@ -7,6 +7,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TooltipProvider,
 } from "@/components/ui/tooltip";
 import { MessageCircle, X, Send, RotateCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -263,7 +264,7 @@ export default function ChatWidget({
   if (isHomePage) return null;
 
   return (
-    <>
+    <TooltipProvider>
       {!isOpen && (
         <Button
           size="icon"
@@ -324,6 +325,6 @@ export default function ChatWidget({
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </TooltipProvider>
   );
 }
