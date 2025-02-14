@@ -3,16 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle, X, Send } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { ChatMessage } from "@shared/schema";
 
-export default function ChatWidget({ embedded = false }) {
+interface ChatWidgetProps {
+  embedded?: boolean;
+  onFirstMessage?: () => void;
+}
+
+export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(embedded);
   const [message, setMessage] = useState("");
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat"],
@@ -20,24 +27,60 @@ export default function ChatWidget({ embedded = false }) {
 
   const mutation = useMutation({
     mutationFn: async (content: string) => {
-      await apiRequest("POST", "/api/chat", { role: "user", content });
+      try {
+        console.log("Sending message:", content); // Debug log
+        const response = await apiRequest("POST", "/api/chat", { role: "user", content });
+        console.log("Response:", response); // Debug log
+        if (!response.ok) {
+          throw new Error("Failed to send message");
+        }
+      } catch (error) {
+        console.error("Error sending message:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      if (onFirstMessage && messages.length === 0) {
+        onFirstMessage();
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
       setMessage("");
     },
+    onError: (error) => {
+      console.error("Mutation error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (message.trim()) {
+      console.log("Submitting message:", message); // Debug log
+      mutation.mutate(message);
+    }
+  };
 
   const ChatContent = () => (
     <>
       <ScrollArea className="flex-1 p-4">
         {messages.map((msg, i) => (
-          <div
+          <motion.div
             key={i}
-            className={`mb-4 ${
-              msg.role === "user" ? "text-right" : "text-left"
-            }`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mb-4 ${msg.role === "user" ? "text-right" : "text-left"}`}
           >
+            {msg.role === "assistant" && (
+              <img
+                src="https://images.unsplash.com/photo-1573496799515-eebbb63814f2"
+                alt="AI Assistant"
+                className="w-8 h-8 rounded-full inline-block mr-2"
+              />
+            )}
             <div
               className={`inline-block p-3 rounded-lg ${
                 msg.role === "user"
@@ -47,27 +90,53 @@ export default function ChatWidget({ embedded = false }) {
             >
               {msg.content}
             </div>
-          </div>
+          </motion.div>
         ))}
+        {mutation.isPending && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-1 text-muted-foreground"
+          >
+            <img
+              src="https://images.unsplash.com/photo-1573496799515-eebbb63814f2"
+              alt="AI Assistant"
+              className="w-8 h-8 rounded-full inline-block mr-2"
+            />
+            <span className="inline-flex gap-1">
+              <motion.span
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+              >
+                .
+              </motion.span>
+              <motion.span
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+              >
+                .
+              </motion.span>
+              <motion.span
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+              >
+                .
+              </motion.span>
+            </span>
+          </motion.div>
+        )}
       </ScrollArea>
 
-      <form
-        className="p-4 border-t"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (message.trim()) {
-            mutation.mutate(message);
-          }
-        }}
-      >
+      <form className="p-4 border-t" onSubmit={handleSubmit}>
         <div className="flex gap-2">
           <Input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."
+            disabled={mutation.isPending}
           />
           <Button type="submit" disabled={mutation.isPending}>
-            Send
+            <Send className="h-4 w-4" />
           </Button>
         </div>
       </form>
