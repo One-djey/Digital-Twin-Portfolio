@@ -145,7 +145,7 @@ export default function ChatWidget({
   const { toast } = useToast();
   const isHomePage = location === "/";
 
-  const { data: messages = [], refetch } = useQuery<ChatMessage[]>({
+  const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat"],
     initialData: [
       {
@@ -157,19 +157,17 @@ export default function ChatWidget({
     ],
   });
 
-  const resetChat = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
-    await refetch();
-  };
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
-
   const mutation = useMutation({
     mutationFn: async (content: string) => {
+      // Optimistic update pour afficher immédiatement le message utilisateur
+      const tempMessage: ChatMessage = {
+        id: messages.length + 1,
+        role: "user",
+        content,
+        timestamp: new Date(),
+      };
+      queryClient.setQueryData(["/api/chat"], [...messages, tempMessage]);
+
       const response = await apiRequest("POST", "/api/chat", {
         role: "user",
         content,
@@ -194,6 +192,26 @@ export default function ChatWidget({
       });
     },
   });
+
+  const resetChat = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+    await queryClient.setQueryData(["/api/chat"], [
+      {
+        id: 0,
+        role: "assistant",
+        content: portfolioData.intro.chatIntro,
+        timestamp: new Date(),
+      },
+    ]);
+
+  };
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
 
   if (embedded) {
     return hideFrame ? (

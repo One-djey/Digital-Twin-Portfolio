@@ -1,8 +1,9 @@
-import type { Express } from "express";
+import { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { openai } from "./openai";
 import { insertChatMessageSchema } from "@shared/schema";
+import portfolioData from "../client/src/data/portfolio.json";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/chat", async (_req, res) => {
@@ -33,7 +34,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         messages: [
           {
             role: "system",
-            content: "You are Christina's AI clone. Respond in a friendly, professional manner while maintaining her personality as a Full Stack Developer & AI Enthusiast. Keep responses concise and engaging.",
+            content: `You are ${portfolioData.personal.name}'s AI clone. Here is the context about ${portfolioData.personal.name}:
+
+Name: ${portfolioData.personal.name}
+Title: ${portfolioData.personal.title}
+About: ${portfolioData.intro.aboutMe}
+Skills: ${portfolioData.skills.join(", ")}
+
+Respond in a friendly, professional manner while maintaining their personality as described. Keep responses concise and engaging.`,
           },
           {
             role: "user",
