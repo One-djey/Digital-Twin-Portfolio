@@ -11,12 +11,14 @@ export class MemStorage implements IStorage {
   private currentId: number;
 
   constructor() {
-    this.messages = [{
-      id: 0,
-      role: "assistant",
-      content: "",
-      timestamp: new Date()
-    }];
+    this.messages = [
+      {
+        id: 0,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      },
+    ];
     this.currentId = 1;
     this.initializeMessages();
   }
@@ -41,8 +43,12 @@ export class MemStorage implements IStorage {
         id: this.currentId++,
         role: "assistant",
         content: portfolioData.default.intro.chatIntro,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
+    } catch (error) {
+      console.error("Failed to reset messages:", error);
+      throw new Error("Could not reset messages.");
+    }
   }
 
   async createMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {

@@ -147,7 +147,7 @@ export default function ChatWidget({
   const isHomePage = location === "/";
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat"]
+    queryKey: ["/api/chat"],
   });
 
   const mutation = useMutation({
@@ -188,15 +188,28 @@ export default function ChatWidget({
 
   const resetChat = async () => {
     try {
+      // Vider les messages du client immédiatement
+      queryClient.setQueryData<ChatMessage[]>(
+        ["/api/chat"],
+        [
+          {
+            id: 0,
+            role: "assistant",
+            content: portfolioData.intro.chatIntro, // Garder le message d'accueil
+            timestamp: new Date(),
+          },
+        ],
+      );
+
       await apiRequest("POST", "/api/chat/reset");
       // Vider complètement le cache
       queryClient.removeQueries({ queryKey: ["/api/chat"] });
-      await queryClient.prefetchQuery({ 
+      await queryClient.prefetchQuery({
         queryKey: ["/api/chat"],
         queryFn: async () => {
           const res = await apiRequest("GET", "/api/chat");
           return res.json();
-        }
+        },
       });
       inputRef.current?.focus();
     } catch (error) {
@@ -222,7 +235,6 @@ export default function ChatWidget({
     return () => clearTimeout(timer);
   }, [messages, isOpen]);
 
-
   if (embedded) {
     return hideFrame ? (
       <div className="h-full">
@@ -237,7 +249,9 @@ export default function ChatWidget({
     ) : (
       <Card className="w-full h-full flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Chat with {portfolioData.personal.name}'s AI Clone</h3>
+          <h3 className="font-semibold">
+            Chat with {portfolioData.personal.name}'s AI Clone
+          </h3>
           <div className="flex gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -302,7 +316,9 @@ export default function ChatWidget({
           >
             <Card className="w-[350px] h-[500px] flex flex-col">
               <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-semibold">Chat with {portfolioData.personal.name}'s AI Clone</h3>
+                <h3 className="font-semibold">
+                  Chat with {portfolioData.personal.name}'s AI Clone
+                </h3>
                 <div className="flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
