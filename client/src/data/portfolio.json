@@ -1,0 +1,71 @@
+{
+  "personal": {
+    "name": "Christina",
+    "title": "Full Stack Developer & AI Enthusiast",
+    "avatar": "https://images.unsplash.com/photo-1573496799515-eebbb63814f2",
+    "location": "San Francisco, CA",
+    "email": "christina@example.com"
+  },
+  "intro": {
+    "shortBio": "Full Stack Developer with expertise in modern web technologies and artificial intelligence",
+    "chatIntro": "Welcome! I'm Christina's AI assistant. Feel free to ask me about her work, skills, or anything else!",
+    "aiPersonality": "Friendly and professional, with deep knowledge of software development and AI technologies"
+  },
+  "skills": [
+    "React",
+    "TypeScript",
+    "Node.js",
+    "Python",
+    "AI/ML",
+    "AWS",
+    "Docker",
+    "GraphQL",
+    "PostgreSQL"
+  ],
+  "projects": [
+    {
+      "title": "E-commerce Platform",
+      "description": "A modern e-commerce solution with AI-powered recommendations",
+      "image": "https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8"
+    },
+    {
+      "title": "Analytics Dashboard",
+      "description": "Real-time analytics and data visualization platform",
+      "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40"
+    },
+    {
+      "title": "Social Media App",
+      "description": "A next-gen social platform with AI content moderation",
+      "image": "https://images.unsplash.com/photo-1510759395231-72b17d622279"
+    },
+    {
+      "title": "AI Chat Interface",
+      "description": "Natural language processing chat application",
+      "image": "https://images.unsplash.com/photo-1660592868727-858d28c3ba52"
+    },
+    {
+      "title": "Portfolio Generator",
+      "description": "Automated portfolio website generator using AI",
+      "image": "https://images.unsplash.com/photo-1685478237595-f452cb125f27"
+    },
+    {
+      "title": "IoT Dashboard",
+      "description": "Smart home IoT control and monitoring system",
+      "image": "https://images.unsplash.com/photo-1679409759768-bea306439ab8"
+    }
+  ],
+  "experience": [
+    {
+      "title": "Senior Full Stack Developer",
+      "company": "Tech Innovations Inc.",
+      "period": "2020-Present",
+      "description": "Leading development of AI-powered web applications"
+    },
+    {
+      "title": "AI Developer",
+      "company": "AI Solutions Ltd.",
+      "period": "2018-2020",
+      "description": "Developed machine learning models for natural language processing"
+    }
+  ]
+}

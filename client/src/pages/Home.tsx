@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ChatWidget from "@/components/ChatWidget";
+import portfolioData from "@/data/portfolio.json";
 
 export default function Home() {
   const [chatStarted, setChatStarted] = useState(false);
@@ -15,15 +16,15 @@ export default function Home() {
         className="text-center mb-8"
       >
         <img
-          src="https://images.unsplash.com/photo-1573496799515-eebbb63814f2"
+          src={portfolioData.personal.avatar}
           alt="Professional headshot"
           className="w-32 h-32 rounded-full mx-auto object-cover mb-6"
         />
         <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
-          Hi, I'm Christina
+          Hi, I'm {portfolioData.personal.name}
         </h1>
         <p className="text-xl text-muted-foreground">
-          Full Stack Developer & AI Enthusiast
+          {portfolioData.personal.title}
         </p>
       </motion.div>
 
@@ -31,7 +32,6 @@ export default function Home() {
         <ChatWidget 
           embedded={true} 
           hideFrame={true}
-          introMessage="Welcome! I'm Christina's AI assistant. Feel free to ask me about her work, skills, or anything else!"
           onFirstMessage={() => setChatStarted(true)} 
         />
       </div>

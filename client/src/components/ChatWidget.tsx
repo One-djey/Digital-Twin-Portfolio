@@ -15,23 +15,17 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import type { ChatMessage } from "@shared/schema";
-
-interface ChatWidgetProps {
-  embedded?: boolean;
-  hideFrame?: boolean;
-  introMessage?: string;
-  onFirstMessage?: () => void;
-}
+import portfolioData from "@/data/portfolio.json";
 
 const ChatContent = ({
   messages,
-  introMessage,
+  isPending,
   mutation,
   inputRef,
   scrollAreaRef,
 }: {
   messages: ChatMessage[];
-  introMessage?: string;
+  isPending: boolean;
   mutation: any;
   inputRef: React.RefObject<HTMLInputElement>;
   scrollAreaRef: React.RefObject<HTMLDivElement>;
@@ -50,29 +44,24 @@ const ChatContent = ({
   return (
     <div className="flex flex-col h-full">
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-        {introMessage && messages.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-4"
-          >
-            <div className="inline-block p-3 rounded-lg bg-muted">
-              {introMessage}
-            </div>
-          </motion.div>
-        )}
-
         {messages.map((msg, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`mb-4 ${msg.role === "user" ? "text-right" : "text-left"}`}
+            className="mb-4 flex items-start gap-2"
           >
+            {msg.role === "assistant" && (
+              <img
+                src={portfolioData.personal.avatar}
+                alt="AI Assistant"
+                className="w-8 h-8 rounded-full mt-1"
+              />
+            )}
             <div
-              className={`inline-block p-3 rounded-lg ${
+              className={`p-3 rounded-lg ${
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground ml-10"
                   : "bg-muted"
               }`}
             >
@@ -81,13 +70,18 @@ const ChatContent = ({
           </motion.div>
         ))}
 
-        {mutation.isPending && (
+        {isPending && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-1 text-muted-foreground"
+            className="mb-4 flex items-start gap-2"
           >
-            <span className="inline-flex gap-1">
+            <img
+              src={portfolioData.personal.avatar}
+              alt="AI Assistant"
+              className="w-8 h-8 rounded-full mt-1"
+            />
+            <div className="p-3 rounded-lg bg-muted inline-flex gap-1">
               <motion.span
                 animate={{ y: [0, -5, 0] }}
                 transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
@@ -106,7 +100,7 @@ const ChatContent = ({
               >
                 .
               </motion.span>
-            </span>
+            </div>
           </motion.div>
         )}
       </ScrollArea>
@@ -117,10 +111,10 @@ const ChatContent = ({
             ref={inputRef}
             name="message"
             placeholder="Type a message..."
-            disabled={mutation.isPending}
+            disabled={isPending}
             autoComplete="off"
           />
-          <Button type="submit" size="icon" disabled={mutation.isPending}>
+          <Button type="submit" size="icon" disabled={isPending}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
@@ -132,7 +126,6 @@ const ChatContent = ({
 export default function ChatWidget({
   embedded = false,
   hideFrame = false,
-  introMessage,
   onFirstMessage,
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(embedded);
@@ -145,6 +138,14 @@ export default function ChatWidget({
 
   const { data: messages = [], refetch } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat"],
+    initialData: [
+      {
+        id: 0,
+        role: "assistant",
+        content: portfolioData.intro.chatIntro,
+        timestamp: new Date(),
+      },
+    ],
   });
 
   const resetChat = async () => {
@@ -169,14 +170,11 @@ export default function ChatWidget({
       }
       return response.json();
     },
-    onSuccess: () => {
-      if (onFirstMessage && messages.length === 0) {
+    onSuccess: (newMessages) => {
+      if (onFirstMessage && messages.length === 1) {
         onFirstMessage();
       }
       queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
     },
     onError: (error) => {
       console.error("Mutation error:", error);
@@ -193,7 +191,7 @@ export default function ChatWidget({
       <div className="h-full">
         <ChatContent
           messages={messages}
-          introMessage={introMessage}
+          isPending={mutation.isPending}
           mutation={mutation}
           inputRef={inputRef}
           scrollAreaRef={scrollAreaRef}
@@ -202,7 +200,7 @@ export default function ChatWidget({
     ) : (
       <Card className="w-full h-full flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
+          <h3 className="font-semibold">Chat with {portfolioData.personal.name}'s AI Clone</h3>
           <div className="flex gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -233,7 +231,7 @@ export default function ChatWidget({
         </div>
         <ChatContent
           messages={messages}
-          introMessage={introMessage}
+          isPending={mutation.isPending}
           mutation={mutation}
           inputRef={inputRef}
           scrollAreaRef={scrollAreaRef}
@@ -242,6 +240,7 @@ export default function ChatWidget({
     );
   }
 
+  // Ne pas afficher le bouton flottant sur la page d'accueil ou si le chat est déjà ouvert
   if (isHomePage || isOpen) return null;
 
   return (
@@ -264,7 +263,7 @@ export default function ChatWidget({
           >
             <Card className="w-[350px] h-[500px] flex flex-col">
               <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
+                <h3 className="font-semibold">Chat with {portfolioData.personal.name}'s AI Clone</h3>
                 <div className="flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -295,7 +294,7 @@ export default function ChatWidget({
               </div>
               <ChatContent
                 messages={messages}
-                introMessage={introMessage}
+                isPending={mutation.isPending}
                 mutation={mutation}
                 inputRef={inputRef}
                 scrollAreaRef={scrollAreaRef}
