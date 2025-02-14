@@ -9,8 +9,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { ChatMessage } from "@shared/schema";
 
-export default function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function ChatWidget({ embedded = false }) {
+  const [isOpen, setIsOpen] = useState(embedded);
   const [message, setMessage] = useState("");
   const queryClient = useQueryClient();
 
@@ -20,13 +20,70 @@ export default function ChatWidget() {
 
   const mutation = useMutation({
     mutationFn: async (content: string) => {
-      await apiRequest("POST", "/api/chat", { content });
+      await apiRequest("POST", "/api/chat", { role: "user", content });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
       setMessage("");
     },
   });
+
+  const ChatContent = () => (
+    <>
+      <ScrollArea className="flex-1 p-4">
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`mb-4 ${
+              msg.role === "user" ? "text-right" : "text-left"
+            }`}
+          >
+            <div
+              className={`inline-block p-3 rounded-lg ${
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted"
+              }`}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+      </ScrollArea>
+
+      <form
+        className="p-4 border-t"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (message.trim()) {
+            mutation.mutate(message);
+          }
+        }}
+      >
+        <div className="flex gap-2">
+          <Input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a message..."
+          />
+          <Button type="submit" disabled={mutation.isPending}>
+            Send
+          </Button>
+        </div>
+      </form>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <Card className="w-full h-[400px] flex flex-col">
+        <div className="flex items-center p-4 border-b">
+          <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
+        </div>
+        <ChatContent />
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -48,7 +105,7 @@ export default function ChatWidget() {
           >
             <Card className="w-[350px] h-[500px] flex flex-col">
               <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-semibold">Chat with AI Assistant</h3>
+                <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -57,48 +114,7 @@ export default function ChatWidget() {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-
-              <ScrollArea className="flex-1 p-4">
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`mb-4 ${
-                      msg.role === "user" ? "text-right" : "text-left"
-                    }`}
-                  >
-                    <div
-                      className={`inline-block p-3 rounded-lg ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                ))}
-              </ScrollArea>
-
-              <form
-                className="p-4 border-t"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (message.trim()) {
-                    mutation.mutate(message);
-                  }
-                }}
-              >
-                <div className="flex gap-2">
-                  <Input
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Type a message..."
-                  />
-                  <Button type="submit" disabled={mutation.isPending}>
-                    Send
-                  </Button>
-                </div>
-              </form>
+              <ChatContent />
             </Card>
           </motion.div>
         )}
