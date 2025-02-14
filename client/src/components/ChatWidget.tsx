@@ -189,7 +189,15 @@ export default function ChatWidget({
   const resetChat = async () => {
     try {
       await apiRequest("POST", "/api/chat/reset");
-      await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+      // Vider complètement le cache
+      queryClient.removeQueries({ queryKey: ["/api/chat"] });
+      await queryClient.prefetchQuery({ 
+        queryKey: ["/api/chat"],
+        queryFn: async () => {
+          const res = await apiRequest("GET", "/api/chat");
+          return res.json();
+        }
+      });
       inputRef.current?.focus();
     } catch (error) {
       toast({
@@ -200,11 +208,19 @@ export default function ChatWidget({
     }
   };
 
+  // Scroll après chaque message et à l'ouverture
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
+    const scrollToBottom = () => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      }
+    };
+
+    scrollToBottom();
+    // Scroll après un petit délai pour s'assurer que le contenu est rendu
+    const timer = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timer);
+  }, [messages, isOpen]);
 
 
   if (embedded) {

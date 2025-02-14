@@ -31,14 +31,18 @@ export class MemStorage implements IStorage {
   }
 
   async resetMessages(): Promise<void> {
-    const portfolioData = await import("../client/src/data/portfolio.json");
-    this.messages = [{
-      id: 0,
-      role: "assistant", 
-      content: portfolioData.default.intro.chatIntro,
-      timestamp: new Date()
-    }];
-    this.currentId = 1;
+    try {
+      const portfolioData = await import("../client/src/data/portfolio.json");
+      // Reset complet
+      this.messages = [];
+      this.currentId = 0;
+      // Ajouter le message initial
+      this.messages.push({
+        id: this.currentId++,
+        role: "assistant",
+        content: portfolioData.default.intro.chatIntro,
+        timestamp: new Date()
+      });
   }
 
   async createMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
