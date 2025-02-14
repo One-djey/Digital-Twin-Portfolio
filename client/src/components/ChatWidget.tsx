@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,20 @@ import type { ChatMessage } from "@shared/schema";
 
 interface ChatWidgetProps {
   embedded?: boolean;
+  hideFrame?: boolean;
+  introMessage?: string;
   onFirstMessage?: () => void;
 }
 
-export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWidgetProps) {
+export default function ChatWidget({ 
+  embedded = false, 
+  hideFrame = false,
+  introMessage,
+  onFirstMessage 
+}: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(embedded);
   const [message, setMessage] = useState("");
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -25,19 +33,22 @@ export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWid
     queryKey: ["/api/chat"],
   });
 
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   const mutation = useMutation({
     mutationFn: async (content: string) => {
-      try {
-        console.log("Sending message:", content); // Debug log
-        const response = await apiRequest("POST", "/api/chat", { role: "user", content });
-        console.log("Response:", response); // Debug log
-        if (!response.ok) {
-          throw new Error("Failed to send message");
-        }
-      } catch (error) {
-        console.error("Error sending message:", error);
-        throw error;
+      const response = await apiRequest("POST", "/api/chat", { 
+        role: "user", 
+        content 
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send message");
       }
+      return response.json();
     },
     onSuccess: () => {
       if (onFirstMessage && messages.length === 0) {
@@ -59,14 +70,28 @@ export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWid
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim()) {
-      console.log("Submitting message:", message); // Debug log
       mutation.mutate(message);
     }
   };
 
   const ChatContent = () => (
-    <>
-      <ScrollArea className="flex-1 p-4">
+    <div className="flex flex-col h-full">
+      <ScrollArea 
+        ref={scrollAreaRef}
+        className="flex-1 p-4"
+      >
+        {introMessage && messages.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mb-4"
+          >
+            <div className="inline-block p-3 rounded-lg bg-muted">
+              {introMessage}
+            </div>
+          </motion.div>
+        )}
+
         {messages.map((msg, i) => (
           <motion.div
             key={i}
@@ -74,13 +99,6 @@ export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWid
             animate={{ opacity: 1, y: 0 }}
             className={`mb-4 ${msg.role === "user" ? "text-right" : "text-left"}`}
           >
-            {msg.role === "assistant" && (
-              <img
-                src="https://images.unsplash.com/photo-1573496799515-eebbb63814f2"
-                alt="AI Assistant"
-                className="w-8 h-8 rounded-full inline-block mr-2"
-              />
-            )}
             <div
               className={`inline-block p-3 rounded-lg ${
                 msg.role === "user"
@@ -92,17 +110,13 @@ export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWid
             </div>
           </motion.div>
         ))}
+
         {mutation.isPending && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="flex items-center gap-1 text-muted-foreground"
           >
-            <img
-              src="https://images.unsplash.com/photo-1573496799515-eebbb63814f2"
-              alt="AI Assistant"
-              className="w-8 h-8 rounded-full inline-block mr-2"
-            />
             <span className="inline-flex gap-1">
               <motion.span
                 animate={{ y: [0, -5, 0] }}
@@ -127,7 +141,7 @@ export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWid
         )}
       </ScrollArea>
 
-      <form className="p-4 border-t" onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="p-4">
         <div className="flex gap-2">
           <Input
             value={message}
@@ -135,20 +149,21 @@ export default function ChatWidget({ embedded = false, onFirstMessage }: ChatWid
             placeholder="Type a message..."
             disabled={mutation.isPending}
           />
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" size="icon" disabled={mutation.isPending}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
       </form>
-    </>
+    </div>
   );
 
   if (embedded) {
-    return (
-      <Card className="w-full h-[400px] flex flex-col">
-        <div className="flex items-center p-4 border-b">
-          <h3 className="font-semibold">Chat with Christina's AI Clone</h3>
-        </div>
+    return hideFrame ? (
+      <div className="h-full">
+        <ChatContent />
+      </div>
+    ) : (
+      <Card className="w-full h-full flex flex-col overflow-hidden">
         <ChatContent />
       </Card>
     );
