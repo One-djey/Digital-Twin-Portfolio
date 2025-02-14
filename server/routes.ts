@@ -55,7 +55,8 @@ Respond in a friendly, professional manner while maintaining their personality a
         content: response.choices[0].message.content ?? "I apologize, I couldn't process that.",
       });
 
-      res.json([userMessage, aiMessage]);
+      const messages = await storage.getMessages();
+      res.json(messages);
     } catch (error) {
       console.error("Error processing chat:", error);
       res.status(500).json({ message: "Failed to process chat message" });
