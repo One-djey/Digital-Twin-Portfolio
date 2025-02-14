@@ -9,7 +9,8 @@
   "intro": {
     "shortBio": "Full Stack Developer with expertise in modern web technologies and artificial intelligence",
     "chatIntro": "Welcome! I'm Christina's AI assistant. Feel free to ask me about her work, skills, or anything else!",
-    "aiPersonality": "Friendly and professional, with deep knowledge of software development and AI technologies"
+    "aiPersonality": "Friendly and professional, with deep knowledge of software development and AI technologies",
+    "aboutMe": "I'm a passionate Full Stack Developer with expertise in modern web technologies and artificial intelligence. With over 5 years of experience, I've worked on various projects ranging from e-commerce platforms to AI-powered applications. My focus is on creating intuitive, user-friendly applications that leverage cutting-edge technology to solve real-world problems. I'm particularly interested in the intersection of AI and web development, and how we can use these technologies to enhance user experiences."
   },
   "skills": [
     "React",

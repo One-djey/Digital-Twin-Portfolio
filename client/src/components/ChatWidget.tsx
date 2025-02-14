@@ -17,6 +17,12 @@ import { useLocation } from "wouter";
 import type { ChatMessage } from "@shared/schema";
 import portfolioData from "@/data/portfolio.json";
 
+interface ChatWidgetProps {
+  embedded?: boolean;
+  hideFrame?: boolean;
+  onFirstMessage?: () => void;
+}
+
 const ChatContent = ({
   messages,
   isPending,
@@ -49,24 +55,27 @@ const ChatContent = ({
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-start gap-2"
+            className={`mb-4 flex items-start gap-2 ${
+              msg.role === "user" ? "justify-end" : ""
+            }`}
           >
             {msg.role === "assistant" && (
               <img
                 src={portfolioData.personal.avatar}
                 alt="AI Assistant"
-                className="w-8 h-8 rounded-full mt-1"
+                className="w-8 h-8 rounded-full mt-1 object-cover"
               />
             )}
             <div
-              className={`p-3 rounded-lg ${
+              className={`p-3 rounded-lg text-left ${
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground ml-10"
-                  : "bg-muted"
+                  ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
+                  : "bg-muted max-w-[80%]"
               }`}
             >
               {msg.content}
             </div>
+            {msg.role === "user" && <div className="w-8" />}
           </motion.div>
         ))}
 
@@ -79,7 +88,7 @@ const ChatContent = ({
             <img
               src={portfolioData.personal.avatar}
               alt="AI Assistant"
-              className="w-8 h-8 rounded-full mt-1"
+              className="w-8 h-8 rounded-full mt-1 object-cover"
             />
             <div className="p-3 rounded-lg bg-muted inline-flex gap-1">
               <motion.span
@@ -240,18 +249,20 @@ export default function ChatWidget({
     );
   }
 
-  // Ne pas afficher le bouton flottant sur la page d'accueil ou si le chat est déjà ouvert
-  if (isHomePage || isOpen) return null;
+  // Ne pas afficher le bouton flottant sur la page d'accueil
+  if (isHomePage) return null;
 
   return (
     <>
-      <Button
-        size="icon"
-        className="fixed bottom-4 right-4 rounded-full shadow-lg"
-        onClick={() => setIsOpen(true)}
-      >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+      {!isOpen && (
+        <Button
+          size="icon"
+          className="fixed bottom-4 right-4 rounded-full shadow-lg"
+          onClick={() => setIsOpen(true)}
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      )}
 
       <AnimatePresence>
         {isOpen && (
