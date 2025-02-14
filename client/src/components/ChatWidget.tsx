@@ -23,65 +23,19 @@ interface ChatWidgetProps {
   onFirstMessage?: () => void;
 }
 
-export default function ChatWidget({ 
-  embedded = false, 
-  hideFrame = false,
+const ChatContent = ({
+  messages,
   introMessage,
-  onFirstMessage 
-}: ChatWidgetProps) {
-  const [isOpen, setIsOpen] = useState(embedded);
-  const [location] = useLocation();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const isHomePage = location === "/";
-
-  const { data: messages = [], refetch } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat"],
-  });
-
-  const resetChat = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
-    await refetch();
-  };
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  const mutation = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", "/api/chat", { 
-        role: "user", 
-        content 
-      });
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      if (onFirstMessage && messages.length === 0) {
-        onFirstMessage();
-      }
-      queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
-    },
-    onError: (error) => {
-      console.error("Mutation error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
+  mutation,
+  inputRef,
+  scrollAreaRef,
+}: {
+  messages: ChatMessage[];
+  introMessage?: string;
+  mutation: any;
+  inputRef: React.RefObject<HTMLInputElement>;
+  scrollAreaRef: React.RefObject<HTMLDivElement>;
+}) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -93,12 +47,9 @@ export default function ChatWidget({
     }
   };
 
-  const ChatContent = () => (
+  return (
     <div className="flex flex-col h-full">
-      <ScrollArea 
-        ref={scrollAreaRef}
-        className="flex-1 p-4"
-      >
+      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
         {introMessage && messages.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -176,11 +127,77 @@ export default function ChatWidget({
       </form>
     </div>
   );
+};
+
+export default function ChatWidget({
+  embedded = false,
+  hideFrame = false,
+  introMessage,
+  onFirstMessage,
+}: ChatWidgetProps) {
+  const [isOpen, setIsOpen] = useState(embedded);
+  const [location] = useLocation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const isHomePage = location === "/";
+
+  const { data: messages = [], refetch } = useQuery<ChatMessage[]>({
+    queryKey: ["/api/chat"],
+  });
+
+  const resetChat = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+    await refetch();
+  };
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const mutation = useMutation({
+    mutationFn: async (content: string) => {
+      const response = await apiRequest("POST", "/api/chat", {
+        role: "user",
+        content,
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      if (onFirstMessage && messages.length === 0) {
+        onFirstMessage();
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    },
+    onError: (error) => {
+      console.error("Mutation error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (embedded) {
     return hideFrame ? (
       <div className="h-full">
-        <ChatContent />
+        <ChatContent
+          messages={messages}
+          introMessage={introMessage}
+          mutation={mutation}
+          inputRef={inputRef}
+          scrollAreaRef={scrollAreaRef}
+        />
       </div>
     ) : (
       <Card className="w-full h-full flex flex-col overflow-hidden">
@@ -189,11 +206,7 @@ export default function ChatWidget({
           <div className="flex gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={resetChat}
-                >
+                <Button variant="ghost" size="icon" onClick={resetChat}>
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -218,7 +231,13 @@ export default function ChatWidget({
             </Tooltip>
           </div>
         </div>
-        <ChatContent />
+        <ChatContent
+          messages={messages}
+          introMessage={introMessage}
+          mutation={mutation}
+          inputRef={inputRef}
+          scrollAreaRef={scrollAreaRef}
+        />
       </Card>
     );
   }
@@ -249,11 +268,7 @@ export default function ChatWidget({
                 <div className="flex gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={resetChat}
-                      >
+                      <Button variant="ghost" size="icon" onClick={resetChat}>
                         <RotateCcw className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
@@ -278,7 +293,13 @@ export default function ChatWidget({
                   </Tooltip>
                 </div>
               </div>
-              <ChatContent />
+              <ChatContent
+                messages={messages}
+                introMessage={introMessage}
+                mutation={mutation}
+                inputRef={inputRef}
+                scrollAreaRef={scrollAreaRef}
+              />
             </Card>
           </motion.div>
         )}

@@ -8,7 +8,6 @@ import Portfolio from "@/pages/Portfolio";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Navbar from "@/components/Navbar";
-import ChatWidget from "@/components/ChatWidget";
 
 function Router() {
   return (
@@ -30,7 +29,6 @@ function App() {
         <main className="container mx-auto px-4">
           <Router />
         </main>
-        <ChatWidget />
         <Toaster />
       </div>
     </QueryClientProvider>
