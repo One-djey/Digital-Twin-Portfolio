@@ -3,6 +3,7 @@ import type { ChatMessage, InsertChatMessage } from "@shared/schema";
 export interface IStorage {
   getMessages(): Promise<ChatMessage[]>;
   createMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  resetMessages(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -13,7 +14,7 @@ export class MemStorage implements IStorage {
     this.messages = [{
       id: 0,
       role: "assistant",
-      content: require("../client/src/data/portfolio.json").intro.chatIntro,
+      content: (async () => (await import("../client/src/data/portfolio.json")).default.intro.chatIntro)(),
       timestamp: new Date()
     }];
     this.currentId = 1;
@@ -27,7 +28,7 @@ export class MemStorage implements IStorage {
     this.messages = [{
       id: 0,
       role: "assistant", 
-      content: require("../client/src/data/portfolio.json").intro.chatIntro,
+      content: (async () => (await import("../client/src/data/portfolio.json")).default.intro.chatIntro)(),
       timestamp: new Date()
     }];
     this.currentId = 1;

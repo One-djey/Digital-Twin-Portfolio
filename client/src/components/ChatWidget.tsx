@@ -187,8 +187,17 @@ export default function ChatWidget({
   });
 
   const resetChat = async () => {
-    await apiRequest("POST", "/api/chat/reset");
-    await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+    try {
+      await apiRequest("POST", "/api/chat/reset");
+      await queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+      inputRef.current?.focus();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reset chat. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
