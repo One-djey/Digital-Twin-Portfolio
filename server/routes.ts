@@ -41,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
+        model: "gpt-4o-mini", // Affordable small model for fast, everyday tasks
         messages: [
           {
             role: "system",
@@ -63,7 +63,9 @@ Respond in a friendly, professional manner while maintaining their personality a
 
       const aiMessage = await storage.createMessage({
         role: "assistant",
-        content: response.choices[0].message.content ?? "I apologize, I couldn't process that.",
+        content:
+          response.choices[0].message.content ??
+          "I apologize, I couldn't process that.",
       });
 
       const messages = await storage.getMessages();
