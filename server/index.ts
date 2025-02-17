@@ -1,9 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { registerRoutes } from "./routes.ts";
+import { setupVite, serveStatic, log } from "./vite.ts";
+import 'dotenv/config';
+import { logRequest } from '../shared/logger.ts';
 
 const app = express();
-app.use(express.json());
+
+// Assurez-vous que le middleware de logging est utilisé avant les autres middlewares
+app.use(logRequest); // Utilisez le middleware de logging personnalisé
+app.use(express.json()); // Middleware pour parser le JSON
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -35,6 +40,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+const environment = process.env.NODE_ENV;
+console.log(`The application is starting ${environment} mode...`);
 
 (async () => {
   const server = await registerRoutes(app);

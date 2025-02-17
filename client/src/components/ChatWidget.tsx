@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import type { ChatMessage } from "@shared/schema";
-import portfolioData from "@/data/portfolio.json";
+import { portfolioData } from "../../../shared/portfolio.ts";
+import ReactMarkdown from 'react-markdown';
 
 interface ChatWidgetProps {
   embedded?: boolean;
@@ -30,12 +31,14 @@ const ChatContent = ({
   mutation,
   inputRef,
   scrollAreaRef,
+  isHomePage,
 }: {
   messages: ChatMessage[];
   isPending: boolean;
   mutation: any;
   inputRef: React.RefObject<HTMLInputElement>;
   scrollAreaRef: React.RefObject<HTMLDivElement>;
+  isHomePage: boolean;
 }) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,40 +48,69 @@ const ChatContent = ({
     if (message?.trim()) {
       mutation.mutate(message.trim());
       form.reset();
+      inputRef.current?.focus();
     }
   };
 
+  const scrollToBottom = () => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isPending]);
+
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-        {messages.map((msg, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`mb-4 flex items-start gap-2 ${
-              msg.role === "user" ? "justify-end" : ""
-            }`}
-          >
-            {msg.role === "assistant" && (
+      <ScrollArea ref={scrollAreaRef} className="flex-grow chat-scroll-area">
+        <div className="flex flex-col h-full">
+          {isHomePage && (
+            <div className="text-center mb-4 pt-4">
               <img
                 src={portfolioData.personal.avatar}
-                alt="AI Assistant"
-                className="w-8 h-8 rounded-full mt-1 object-cover"
+                alt="Professional headshot"
+                className="w-32 h-32 rounded-full mx-auto object-cover mb-4"
               />
-            )}
-            <div
-              className={`p-3 rounded-lg text-left ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
-                  : "bg-muted max-w-[80%]"
-              }`}
-            >
-              {msg.content}
+              <h1 className="text-4xl font-bold p-4 bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
+                Hi, I'm {portfolioData.personal.name}
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                {portfolioData.personal.title}
+              </p>
             </div>
-            {msg.role === "user" && <div className="w-8" />}
-          </motion.div>
-        ))}
+          )}
+
+          {messages.length === 0 && !isPending && (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">Aucun message à afficher.</p>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mb-4 flex items-start gap-2 ${msg.role === "user" ? "justify-end" : ""}`}
+            >
+              {msg.role === "assistant" && (
+                <img
+                  src={portfolioData.personal.avatar}
+                  alt="AI Assistant"
+                  className="w-8 h-8 rounded-full mt-1 object-cover"
+                />
+              )}
+              <div
+                className={`p-3 rounded-lg text-left ${msg.role === "user" ? "bg-primary text-primary-foreground ml-auto max-w-[80%]" : "bg-muted max-w-[80%]"}`}
+              >
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
+              {msg.role === "user" && <div className="w-8" />}
+            </motion.div>
+          ))}
+        </div>
 
         {isPending && (
           <motion.div
@@ -129,15 +161,12 @@ const ChatContent = ({
           </Button>
         </div>
       </form>
+      <p className="text-center text-muted-foreground text-xs">Powered by {portfolioData.ai_clone.model}</p>
     </div>
   );
 };
 
-export default function ChatWidget({
-  embedded = false,
-  hideFrame = false,
-  onFirstMessage,
-}: ChatWidgetProps) {
+const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMessage }: ChatWidgetProps, ref) => {
   const [isOpen, setIsOpen] = useState(embedded);
   const [location] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,14 +174,31 @@ export default function ChatWidget({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isHomePage = location === "/";
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
   const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat"],
   });
 
+  useEffect(() => {
+    if (isFirstVisit) {
+      setIsFirstVisit(false);
+      const existingMessages = queryClient.getQueryData<ChatMessage[]>(["/api/chat"]);
+      if (!existingMessages || existingMessages.length === 0) {
+        queryClient.setQueryData(["/api/chat"], [
+          {
+            id: 0,
+            role: "assistant",
+            content: portfolioData.intro.chatIntro,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    }
+  }, [isFirstVisit, queryClient]);
+
   const mutation = useMutation({
     mutationFn: async (content: string) => {
-      // Optimistic update pour afficher immédiatement le message utilisateur
       const tempMessage: ChatMessage = {
         id: messages.length + 1,
         role: "user",
@@ -175,6 +221,7 @@ export default function ChatWidget({
         onFirstMessage();
       }
       queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+      inputRef.current?.focus();
     },
     onError: (error) => {
       console.error("Mutation error:", error);
@@ -188,21 +235,21 @@ export default function ChatWidget({
 
   const resetChat = async () => {
     try {
-      // Vider les messages du client immédiatement
-      queryClient.setQueryData<ChatMessage[]>(
-        ["/api/chat"],
-        [
-          {
-            id: 0,
-            role: "assistant",
-            content: portfolioData.intro.chatIntro, // Garder le message d'accueil
-            timestamp: new Date(),
-          },
-        ],
-      );
+      queryClient.setQueryData<ChatMessage[]>(["/api/chat"], [
+        {
+          id: 0,
+          role: "assistant",
+          content: portfolioData.intro.chatIntro,
+          timestamp: new Date(),
+        },
+      ]);
 
-      await apiRequest("POST", "/api/chat/reset");
-      // Vider complètement le cache
+      const response = await apiRequest("POST", "/api/chat/reset");
+      if (!response.ok) {
+        console.error("Failed to reset chat:", response.statusText);
+        throw new Error("Failed to reset chat.");
+      }
+
       queryClient.removeQueries({ queryKey: ["/api/chat"] });
       await queryClient.prefetchQuery({
         queryKey: ["/api/chat"],
@@ -213,6 +260,7 @@ export default function ChatWidget({
       });
       inputRef.current?.focus();
     } catch (error) {
+      console.error("Error in resetChat:", error);
       toast({
         title: "Error",
         description: "Failed to reset chat. Please try again.",
@@ -221,19 +269,29 @@ export default function ChatWidget({
     }
   };
 
-  // Scroll après chaque message et à l'ouverture
-  useEffect(() => {
-    const scrollToBottom = () => {
-      if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-      }
-    };
+  const scrollToBottom = () => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  };
 
-    scrollToBottom();
-    // Scroll après un petit délai pour s'assurer que le contenu est rendu
-    const timer = setTimeout(scrollToBottom, 100);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
     return () => clearTimeout(timer);
-  }, [messages, isOpen]);
+  }, [messages]);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [isOpen]);
+
+  useImperativeHandle(ref, () => ({
+    resetChat,
+    scrollToBottom,
+  }));
 
   if (embedded) {
     return hideFrame ? (
@@ -244,6 +302,7 @@ export default function ChatWidget({
           mutation={mutation}
           inputRef={inputRef}
           scrollAreaRef={scrollAreaRef}
+          isHomePage={isHomePage}
         />
       </div>
     ) : (
@@ -286,12 +345,12 @@ export default function ChatWidget({
           mutation={mutation}
           inputRef={inputRef}
           scrollAreaRef={scrollAreaRef}
+          isHomePage={isHomePage}
         />
       </Card>
     );
   }
 
-  // Ne pas afficher le bouton flottant sur la page d'accueil
   if (isHomePage) return null;
 
   return (
@@ -353,6 +412,7 @@ export default function ChatWidget({
                 mutation={mutation}
                 inputRef={inputRef}
                 scrollAreaRef={scrollAreaRef}
+                isHomePage={isHomePage}
               />
             </Card>
           </motion.div>
@@ -360,4 +420,6 @@ export default function ChatWidget({
       </AnimatePresence>
     </TooltipProvider>
   );
-}
+});
+
+export default ChatWidget;

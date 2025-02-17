@@ -11,3 +11,10 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+.chat-scroll-area {
+  flex-grow: 1; /* Permet à la zone défilable de prendre tout l'espace disponible */
+  min-height: 100px; /* Hauteur minimale */
+  max-height: 70vh; /* Hauteur maximale */
+  overflow-y: auto; /* Permet le défilement */
+}

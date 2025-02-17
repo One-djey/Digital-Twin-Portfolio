@@ -1,5 +1,9 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { portfolioData } from "../../../shared/portfolio.ts"; // Importer les données du portfolio
+import { useState } from "react"; // Importer useState pour gérer l'état des compétences
+import ReactMarkdown from 'react-markdown'; // Importer ReactMarkdown
+import remarkGfm from 'remark-gfm'; // Importer remark-gfm pour le support de GFM
 
 export default function About() {
   return (
@@ -13,35 +17,18 @@ export default function About() {
         
         <Card className="mb-8">
           <CardContent className="pt-6">
-            <p className="text-lg leading-relaxed mb-6">
-              I'm a passionate Full Stack Developer with expertise in modern web technologies
-              and artificial intelligence. With over 5 years of experience, I've worked
-              on various projects ranging from e-commerce platforms to AI-powered
-              applications.
-            </p>
-            
-            <p className="text-lg leading-relaxed">
-              My focus is on creating intuitive, user-friendly applications that
-              leverage cutting-edge technology to solve real-world problems. I'm
-              particularly interested in the intersection of AI and web development,
-              and how we can use these technologies to enhance user experiences.
-            </p>
+            <ReactMarkdown 
+              className="text-lg leading-relaxed mb-6" 
+              remarkPlugins={[remarkGfm]} // Utiliser remark-gfm pour le support GFM
+            >
+              {portfolioData.intro.aboutMe}
+            </ReactMarkdown>
           </CardContent>
         </Card>
 
         <h2 className="text-2xl font-semibold mb-4">Skills</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-          {[
-            "React",
-            "TypeScript",
-            "Node.js",
-            "Python",
-            "AI/ML",
-            "AWS",
-            "Docker",
-            "GraphQL",
-            "PostgreSQL",
-          ].map((skill, index) => (
+          {portfolioData.skills.map((skill, index) => (
             <motion.div
               key={skill}
               initial={{ opacity: 0, x: -20 }}
@@ -51,6 +38,58 @@ export default function About() {
             >
               {skill}
             </motion.div>
+          ))}
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-4">Experiences</h2>
+        <div className="mb-8 space-y-4">
+          {portfolioData.experiences.map((experience, index) => {
+            const [isOpen, setIsOpen] = useState(false); // État pour gérer l'affichage des compétences
+            return (
+              <Card key={index} className="border border-gray-200">
+                <CardContent className="py-4">
+                  <div className="flex items-start">
+                    <img src={experience.logo} alt={`${experience.company} logo`} className="w-16 h-16 rounded-md mr-4" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg">{experience.title}</h3>
+                      <p className="text-sm text-muted-foreground font-bold">{experience.company}</p>
+                      <p className="text-sm text-muted-foreground">{experience.period}</p>
+                    </div>
+                  </div>
+                  <p className="mt-2">{experience.description}</p>
+                  <button onClick={() => setIsOpen(!isOpen)} className="mt-2 text-blue-500">
+                    Skills
+                  </button>
+                  {isOpen && (
+                    <div className="mt-2 flex flex-wrap">
+                      {experience.skills.map((skill, idx) => (
+                        <span key={idx} className="bg-muted text-sm rounded-full px-2 py-1 mr-2 mb-2">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-4">Education</h2>
+        <div className="mb-8 space-y-4">
+          {portfolioData.education.map((education, index) => (
+            <Card key={index} className="border border-gray-200">
+              <CardContent className="py-4">
+                <div className="flex items-start">
+                  <img src={education.logo} alt={`${education.institution} logo`} className="w-16 h-16 rounded-md mr-4" />
+                  <div className="flex-1">
+                    <h3><span className="font-semibold text-lg">{education.degree}</span> - {education.field}</h3>
+                    <p className="text-sm text-muted-foreground font-bold">{education.institution}</p>
+                    <p className="text-sm text-muted-foreground">{education.year}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </motion.div>

@@ -1,4 +1,5 @@
 import type { ChatMessage, InsertChatMessage } from "@shared/schema";
+import { portfolioData } from "../shared/portfolio.ts";
 
 export interface IStorage {
   getMessages(): Promise<ChatMessage[]>;
@@ -24,8 +25,7 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeMessages() {
-    const portfolioData = await import("../client/src/data/portfolio.json");
-    this.messages[0].content = portfolioData.default.intro.chatIntro;
+    this.messages[0].content = portfolioData.intro.chatIntro;
   }
 
   async getMessages(): Promise<ChatMessage[]> {
@@ -34,7 +34,6 @@ export class MemStorage implements IStorage {
 
   async resetMessages(): Promise<void> {
     try {
-      const portfolioData = await import("../client/src/data/portfolio.json");
       // Reset complet
       this.messages = [];
       this.currentId = 0;
@@ -42,7 +41,7 @@ export class MemStorage implements IStorage {
       this.messages.push({
         id: this.currentId++,
         role: "assistant",
-        content: portfolioData.default.intro.chatIntro,
+        content: portfolioData.intro.chatIntro,
         timestamp: new Date(),
       });
     } catch (error) {
