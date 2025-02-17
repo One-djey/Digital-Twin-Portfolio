@@ -1,4 +1,4 @@
-import { AIAgent } from "./AIAgent";
+import { AIAgent } from "./AIAgent.ts";
 import { portfolioData } from "../../shared/portfolio.ts";
 
 class DigitalTwinAgent extends AIAgent {

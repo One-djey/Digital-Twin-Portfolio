@@ -1,7 +1,6 @@
 import { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.ts";
-import { getChatResponse } from "./openai.ts";
 import { insertChatMessageSchema } from "../shared/schema.ts";
 import { logger, logRequest } from '../shared/logger.ts'; // Importez le logger
 import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";

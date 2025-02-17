@@ -1,6 +1,6 @@
 import 'dotenv/config'; // Assurez-vous que dotenv est importé
 import { Mistral } from '@mistralai/mistralai';
-import { AiApiInterface } from './AiApiInterface';
+import { AiApiInterface } from './AiApiInterface.ts';
 
 export class MistralAPI implements AiApiInterface {
   public client: Mistral;

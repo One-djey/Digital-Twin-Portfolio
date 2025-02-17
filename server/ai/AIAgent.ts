@@ -1,5 +1,5 @@
-import { OpenAIAPI } from "./APIs/OpenAI";
-import { MistralAPI } from "./APIs/Mistral";
+import { OpenAIAPI } from "./APIs/OpenAI.ts";
+import { MistralAPI } from "./APIs/Mistral.ts";
 
 export abstract class AIAgent {
   protected model: string;
@@ -22,8 +22,6 @@ export abstract class AIAgent {
     } else {
       throw new Error("Unsupported model type");
     }
-    console.log(`[AIAgent] Agent ready! Model : ${model}`);
-    console.log(`[AIAgent] Context : ${systemMessage}`);
   }
 
   protected async callAPI(messages: any[]): Promise<string> {

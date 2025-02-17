@@ -64,7 +64,7 @@ console.log(`The application is starting ${environment} mode...`);
     serveStatic(app);
   }
 
-  const PORT = process.env.PORT || 5000;
+  const PORT: number = Number(process.env.PORT) || 5000;
   server.listen(PORT, "0.0.0.0", () => {
     log(`serving on port ${PORT}`);
   });

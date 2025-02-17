@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { AiApiInterface } from "./AiApiInterface";
+import { AiApiInterface } from "./AiApiInterface.ts";
 import 'dotenv/config';
 
 export class OpenAIAPI implements AiApiInterface {
