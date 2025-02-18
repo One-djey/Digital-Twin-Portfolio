@@ -69,17 +69,17 @@ export default function Contact() {
   }
 
   return (
-    <div className="py-12">
+    <div className="py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-2xl mx-auto"
       >
+        <h1 className="text-4xl font-bold mb-8 text-center text-gray-900">
+          Get in Touch
+        </h1>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Get in Touch</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
