@@ -1,64 +1,56 @@
-import type { ChatMessage, InsertChatMessage } from "@shared/schema";
-import { portfolioData } from "../shared/portfolio.ts";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from 'postgres';
+import { eq } from "drizzle-orm";
+import { chatMessages, contactMessages, users } from "../shared/schema.ts";
 
-export interface IStorage {
-  getMessages(): Promise<ChatMessage[]>;
-  createMessage(message: InsertChatMessage): Promise<ChatMessage>;
-  resetMessages(): Promise<void>;
+const client = postgres(process.env.DATABASE_URL!);
+export const db = drizzle({ client });
+
+// Récupérer un utilisateur spécifique
+export async function getUser(userId: string) {
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result[0] ||  null;
 }
 
-export class MemStorage implements IStorage {
-  private messages: ChatMessage[];
-  private currentId: number;
-
-  constructor() {
-    this.messages = [
-      {
-        id: 0,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      },
-    ];
-    this.currentId = 1;
-    this.initializeMessages();
-  }
-
-  private async initializeMessages() {
-    this.messages[0].content = portfolioData.intro.chatIntro;
-  }
-
-  async getMessages(): Promise<ChatMessage[]> {
-    return this.messages;
-  }
-
-  async resetMessages(): Promise<void> {
-    try {
-      // Reset complet
-      this.messages = [];
-      this.currentId = 0;
-      // Ajouter le message initial
-      this.messages.push({
-        id: this.currentId++,
-        role: "assistant",
-        content: portfolioData.intro.chatIntro,
-        timestamp: new Date(),
-      });
-    } catch (error) {
-      console.error("Failed to reset messages:", error);
-      throw new Error("Could not reset messages.");
-    }
-  }
-
-  async createMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const message: ChatMessage = {
-      id: this.currentId++,
-      ...insertMessage,
-      timestamp: new Date(),
-    };
-    this.messages.push(message);
-    return message;
-  }
+// Ajouter un utilisateur avec un ID spécifié
+export async function addUser(id: string, name?: string | null, email?: string | null) {
+  return await db.insert(users).values({ id, name, email }).returning();
 }
 
-export const storage = new MemStorage();
+// Mettre à jour les informations d'un utilisateur avec un ID spécifié
+export async function updateUser(id: string, name?: string | null, email?: string | null) {
+  // Construire l'objet de mise à jour avec uniquement les champs fournis
+  const updateData: { name?: string | null, email?: string | null } = {};
+  if (name !== undefined) updateData.name = name;
+  if (email !== undefined) updateData.email = email;
+
+  // Mettre à jour l'utilisateur dans la base de données
+  return await db.update(users).set(updateData).where(eq(users.id, id)).returning();
+}
+
+
+// Vérifier si un utilisateur existe par userId
+export async function userExistsById(userId: string): Promise<boolean> {
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result.length > 0;
+}
+
+// Ajouter un message de chat
+export async function addMessage(userId: string, role: string, content: string) {
+  return await db.insert(chatMessages).values({ userId, role, content }).returning();
+}
+
+// Récupérer les messages d'un utilisateur spécifique
+export async function getUserMessages(userId: string) {
+  return await db.select().from(chatMessages).where(eq(chatMessages.userId, userId));
+}
+
+// Supprimer les messages d'un utilisateur spécifique
+export async function resetUserMessages(userId: string) {
+  await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
+}
+
+// Ajouter un message depuis le formulaire de contact
+export async function addContactMessage(userId: string, message: string) {
+  return await db.insert(contactMessages).values({ userId, message }).returning();
+}

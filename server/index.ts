@@ -65,7 +65,8 @@ console.log(`The application is starting ${environment} mode...`);
   }
 
   const PORT: number = Number(process.env.PORT) || 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
+  const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
+  server.listen(PORT, HOSTNAME, () => {
+    log(`serving on ${HOSTNAME}:${PORT}`);
   });
 })();

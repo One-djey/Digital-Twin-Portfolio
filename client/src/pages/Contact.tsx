@@ -15,6 +15,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { apiRequest } from "@/lib/queryClient";
+import { getOrCreateUserId } from "@shared/uuidv4";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -35,13 +37,35 @@ export default function Contact() {
     },
   });
 
-  function onSubmit(data: FormData) {
-    console.log(data);
-    toast({
-      title: "Message sent!",
-      description: "Thank you for your message. I'll get back to you soon.",
-    });
-    form.reset();
+  async function onSubmit(data: FormData) {
+    try{
+      const user_id = getOrCreateUserId();
+      const response = await apiRequest("POST", "/api/contact", {
+        user:{
+          id: user_id,
+          name: data.name,
+          email: data.email,
+        },
+        contact: {
+          userId: user_id,
+          message: data.message,
+        }
+      });
+      if (!response.ok) {
+        throw new Error("Failed to send contat form");
+      }
+      toast({
+        title: "Message sent!",
+        description: `Thank you ${data.name} for your message. I'll get back to you soon!`,
+      });
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again later.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (

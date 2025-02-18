@@ -15,15 +15,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
-import type { ChatMessage } from "@shared/schema";
 import { portfolioData } from "../../../shared/portfolio.ts";
 import ReactMarkdown from 'react-markdown';
+import { getOrCreateUserId } from "@shared/uuidv4.ts";
 
 interface ChatWidgetProps {
   embedded?: boolean;
   hideFrame?: boolean;
   onFirstMessage?: () => void;
 }
+
+type ChatMessage = {
+  role: string;
+  content: string;
+  created_at: Date;
+};
 
 const ChatContent = ({
   messages,
@@ -168,48 +174,57 @@ const ChatContent = ({
 
 const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMessage }: ChatWidgetProps, ref) => {
   const [isOpen, setIsOpen] = useState(embedded);
+  const [isFirstVisit, setIsFirstVisit] = useState(true);
   const [location] = useLocation();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isHomePage = location === "/";
-  const [isFirstVisit, setIsFirstVisit] = useState(true);
 
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat"],
+  const userId = getOrCreateUserId();
+
+  const { data: fetchedMessages = [] } = useQuery<ChatMessage[]>({
+    queryKey: ["/api/chat", userId],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/chat?user_id=${userId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch messages");
+      }
+      return response.json();
+    },
   });
 
+  const introMessage = {
+    role: "assistant",
+    content: portfolioData.intro.chatIntro,
+    created_at: new Date(),
+  };
+
+  const messages  = fetchedMessages.length === 0 || fetchedMessages[0].content !== introMessage.content
+  ? [introMessage, ...fetchedMessages]
+  : fetchedMessages;
+  
   useEffect(() => {
     if (isFirstVisit) {
       setIsFirstVisit(false);
-      const existingMessages = queryClient.getQueryData<ChatMessage[]>(["/api/chat"]);
-      if (!existingMessages || existingMessages.length === 0) {
-        queryClient.setQueryData(["/api/chat"], [
-          {
-            id: 0,
-            role: "assistant",
-            content: portfolioData.intro.chatIntro,
-            timestamp: new Date(),
-          },
-        ]);
-      }
     }
-  }, [isFirstVisit, queryClient]);
+  }, [isFirstVisit]);
+  
+  
 
   const mutation = useMutation({
     mutationFn: async (content: string) => {
       const tempMessage: ChatMessage = {
-        id: messages.length + 1,
         role: "user",
         content,
-        timestamp: new Date(),
+        created_at: new Date(),
       };
-      queryClient.setQueryData(["/api/chat"], [...messages, tempMessage]);
+      queryClient.setQueryData(["/api/chat", userId], [...messages, tempMessage]);
 
       const response = await apiRequest("POST", "/api/chat", {
-        role: "user",
-        content,
+        user_id: userId,
+        message: { role: "user", content },
       });
       if (!response.ok) {
         throw new Error("Failed to send message");
@@ -220,7 +235,7 @@ const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMes
       if (onFirstMessage && messages.length === 1) {
         onFirstMessage();
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/chat"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/chat", userId] });
       inputRef.current?.focus();
     },
     onError: (error) => {
@@ -235,26 +250,21 @@ const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMes
 
   const resetChat = async () => {
     try {
-      queryClient.setQueryData<ChatMessage[]>(["/api/chat"], [
-        {
-          id: 0,
-          role: "assistant",
-          content: portfolioData.intro.chatIntro,
-          timestamp: new Date(),
-        },
-      ]);
+      queryClient.setQueryData<ChatMessage[]>(["/api/chat", userId], [introMessage]);
 
-      const response = await apiRequest("POST", "/api/chat/reset");
+      const response = await apiRequest("POST", "/api/chat/reset", {
+        user_id: userId,
+      });
       if (!response.ok) {
         console.error("Failed to reset chat:", response.statusText);
         throw new Error("Failed to reset chat.");
       }
 
-      queryClient.removeQueries({ queryKey: ["/api/chat"] });
+      queryClient.removeQueries({ queryKey: ["/api/chat", userId] });
       await queryClient.prefetchQuery({
-        queryKey: ["/api/chat"],
+        queryKey: ["/api/chat", userId],
         queryFn: async () => {
-          const res = await apiRequest("GET", "/api/chat");
+          const res = await apiRequest("GET", `/api/chat?user_id=${userId}`);
           return res.json();
         },
       });

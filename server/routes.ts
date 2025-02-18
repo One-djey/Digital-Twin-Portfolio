@@ -1,28 +1,109 @@
 import { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage.ts";
-import { insertChatMessageSchema } from "../shared/schema.ts";
-import { logger, logRequest } from '../shared/logger.ts'; // Importez le logger
+import { getUser, addUser, userExistsById, addMessage, getUserMessages, resetUserMessages, addContactMessage, updateUser } from "./storage.ts";
+import { logger, logRequest } from '../shared/logger.ts';
+import { insertChatMessageSchema, insertContactSchema, insertUserSchema } from '../shared/schema.ts';
 import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
+import { isUUID } from "@shared/uuidv4.ts";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  app.use(logRequest); // Utilisez le middleware de logging personnalisé
+  app.use(logRequest);
 
-  app.post("/api/chat/reset", async (_req, res) => {
+  app.post("/api/contact", async (req, res) => {
     try {
-      await storage.resetMessages();
-      const messages = await storage.getMessages();
-      res.json(messages);
+      const contactRequest = req.body;
+      const receivedUser = contactRequest.user;
+      const receivedContact = contactRequest.contact
+
+      // Vérifiez que les champs nécessaires sont présents
+      const userResult = insertUserSchema.safeParse(receivedUser);
+      if (!receivedUser || !userResult.success) {
+        logger.error(`Invalid user format: ${JSON.stringify(receivedUser)}`)
+        res.status(400).json({ message: "Invalid user format" });
+        return;
+      }
+      const contactResult = insertContactSchema.safeParse(receivedContact);
+      if (!receivedContact || !contactResult.success) {
+        logger.error(`Invalid user format: ${JSON.stringify(receivedContact)}`)
+        res.status(400).json({ message: "Invalid contact format" });
+        return;
+      }
+  
+      // Ajoutez l'utilisateur à la base de données, s'il n'existe pas
+      if(!await userExistsById(userResult.data.id)){
+        const newUser = await addUser(userResult.data.id, userResult.data.name, userResult.data.email);
+  
+        // Vérifiez si l'utilisateur a été ajouté avec succès
+        if (!newUser) {
+          logger.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
+          res.status(500).json({ message: "Failed to add user." });
+          return;
+        }
+      } else {
+        // Mettre a jour les info de l'utilisateur
+        await updateUser(userResult.data.id, userResult.data?.name, userResult.data?.email);
+      }
+
+      // Ajouter le formulaire de contact à la base de données
+      const newContact = await addContactMessage(contactResult.data.userId, contactResult.data.message);
+  
+      // Vérifiez si le formulaire de contact a été ajouté avec succès
+      if (!newContact) {
+        logger.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
+        res.status(500).json({ message: "Failed to add contact message." });
+        return;
+      }
+      
+      logger.info(`New contact form saved!`)
+      res.status(201).json({});
+    } catch (error: any) {
+      logger.error("Error adding user: " + error.message);
+      res.status(500).json({ message: "Failed to add user" });
+    }
+  });
+  
+
+  app.post("/api/chat/reset", async (req, res) => {
+    try {
+      // Check user ID exists
+      const user_id: string = req.body?.user_id;
+      if(!user_id || !await userExistsById(user_id)){
+        logger.error(`User ID ${user_id} not found.`)
+        res.status(400).json({ message: "Invalid User ID" });
+        return;
+      }
+
+      // Delete all user's messages
+      await resetUserMessages(user_id);
+
+      // Respond with all messages
+      const messages = await getUserMessages(user_id);
+      res.status(205).json(messages);
     } catch (error:any) {
       logger.error("Error resetting messages: " + error.message);
       res.status(500).json({ message: "Failed to reset messages" });
     }
   });
 
-  app.get("/api/chat", async (_req, res) => {
+  app.get("/api/chat", async (req, res) => {
     try {
-      const messages = await storage.getMessages();
-      res.json(messages);
+      // Check user ID format
+      const user_id = req.query?.user_id;
+      if(!user_id || typeof user_id != 'string'){
+        logger.error(`Invalid user ID ${user_id} format.`);
+        res.status(400).json({ message: "Invalid User ID format" });
+        return;
+      }
+      // Check user ID exists
+      if(!await userExistsById(user_id)){
+        logger.warn(`User ID ${user_id} not found, return empty message list`);
+        res.status(204).json([]);
+        return;
+      }
+
+      // Retrive all user's messages
+      const messages = await getUserMessages(user_id);
+      res.status(200).json(messages);
     } catch (error:any) {
       logger.error("Error fetching messages: " + error.message);
       res.status(500).json({ message: "Failed to fetch messages" });
@@ -31,28 +112,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/chat", async (req, res) => {
     try {
-      const result = insertChatMessageSchema.safeParse(req.body);
-      if (!result.success) {
+      // Check user_id format
+      const user_id: string = req.body?.user_id;
+      if(!user_id || !isUUID(user_id)){
+        logger.error(`User ID ${user_id}.`)
+        res.status(400).json({ message: "Invalid user ID" });
+        return;
+      }
+
+      // Check message format
+      const requestChatMessage = req.body?.message;
+      const result = insertChatMessageSchema.safeParse(requestChatMessage);
+      if (!requestChatMessage || !result.success) {
+        logger.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`)
         res.status(400).json({ message: "Invalid message format" });
         return;
       }
 
-      await storage.createMessage({
-        role: "user",
-        content: result.data.content,
-      });
+      // Create user if not exists
+      if(!await userExistsById(user_id)){
+        await addUser(user_id);
+      }
 
-      const messages = await storage.getMessages();
+      // Add user's message
+      await addMessage(user_id, "user", result.data.content);
+
+      // Get AI response
+      const messages = await getUserMessages(user_id);
       const aiResponse = await digitalTwinAgent.getResponse(messages);
 
-      await storage.createMessage({
-        role: "assistant",
-        content: aiResponse,
-      });
+      // Add AI' response
+      await addMessage(user_id, "assistant", aiResponse);
 
-      const allMessages = await storage.getMessages();
-      allMessages.forEach(msg => console.log(`[chat] ${msg.role}: ${msg.content}`));
-      res.json(allMessages);
+      // Respond with all messages
+      const allMessages = await getUserMessages(user_id);
+      allMessages.forEach((msg: any) => logger.info(`[chat] ${msg.role}: ${msg.content}`));
+      res.status(201).json(allMessages);
     } catch (error:any) {
       logger.error("Error processing chat: " + error.message);
       res.status(500).json({ message: "Failed to process chat message" });
