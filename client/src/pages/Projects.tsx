@@ -34,7 +34,7 @@ const projects = [
   },
 ];
 
-export default function Portfolio() {
+export default function Projects() {
   return (
     <div className="py-12">
       <motion.div

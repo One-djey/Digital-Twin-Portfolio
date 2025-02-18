@@ -15,12 +15,12 @@ export const portfolioData = {
     "intro": {
       "shortBio": "Remote freelance developper with expertise in data and artificial intelligence",
       "chatIntro": "Welcome! I'm Jeremy's AI assistant. Feel free to ask me about his work, skills, or anything else!", // Used as first chat message
-      "aboutMe": `I am a passionate Data & AI Engineer. With over 9 years of professional experience, I have developed strong skills in building pipelines, AI integration, and automation. My MBA and engineering degree reflect my interest in entrepreneurship and technology.
-      
-My specialties:
-  • **Data Pipelines**: Designing and optimizing pipelines to fully leverage your data
-  • **Artificial Intelligence**: Integrating AI and intelligent agents to automate and transform your processes
-  • **SaaS and APIs**: Developing custom, reliable, and scalable solutions.
+      "aboutMe": `I am a passionate Data & AI Engineer. With over 9 years of professional experience, I have developed strong skills in building pipelines, AI integration, and automation. My MBA and engineering degree reflect my interest in entrepreneurship and technology.\n
+My specialties:\n
+  • **Data Pipelines**: Designing and optimizing pipelines to fully leverage your data\n
+  • **Artificial Intelligence**: Integrating AI and intelligent agents to automate and transform your processes\n
+  • **SaaS and APIs**: Developing custom, reliable, and scalable solutions.\n
+ \n
 Leverage my expertise to optimize your data and achieve your business goals. 📈`, // Used in About page
     },
     "skills": [   // Use in About page
@@ -34,7 +34,7 @@ Leverage my expertise to optimize your data and achieve your business goals. �
       "AI/ML",
       "LLM"
     ],
-    "projects": [  // Use in About page
+    "projects": [  // Use in Project page
       {
         "title": "E-commerce Platform",
         "description": "A modern e-commerce solution with AI-powered recommendations",

@@ -7,3 +7,4 @@ vite.config.ts.*
 .env
 package-lock.json
 logs/*
+.vscode/**
