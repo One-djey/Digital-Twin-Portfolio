@@ -8,3 +8,4 @@ vite.config.ts.*
 package-lock.json
 logs/*
 .vscode/**
+.vercel
