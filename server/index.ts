@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { VercelRequest, VercelResponse } from "@vercel/node";
 import { registerRoutes } from "./routes.ts";
 import { setupVite, serveStatic, log } from "./vite.ts";
 import 'dotenv/config';
@@ -44,7 +45,7 @@ app.use((req, res, next) => {
 const environment = process.env.NODE_ENV;
 console.log(`The application is starting ${environment} mode...`);
 
-(async () => {
+const serverPromise = (async () => {
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -64,9 +65,18 @@ console.log(`The application is starting ${environment} mode...`);
     serveStatic(app);
   }
 
-  const PORT: number = Number(process.env.PORT) || 5000;
-  const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
-  server.listen(PORT, HOSTNAME, () => {
-    log(`serving on ${HOSTNAME}:${PORT}`);
-  });
+  if(app.get("env") != "vercel"){  // Donot run the server on Vercel (export bellow use it as a serverless function)
+    const PORT: number = Number(process.env.PORT) || 5000;
+    const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
+    server.listen(PORT, HOSTNAME, () => {
+      log(`serving on ${HOSTNAME}:${PORT}`);
+    });
+  }
+  return app;
 })();
+
+// Serverless function export for Vercel
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const appInstance = await serverPromise;
+  return appInstance(req as any, res as any);
+}

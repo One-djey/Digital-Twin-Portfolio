@@ -1,16 +1,12 @@
 {
     "version": 2,
-    "installCommand": "npm install",
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist/public",
-    "devCommand": "vite",
-    "functions": {
-      "api/index.js": {
-        "runtime": "nodejs18.x"
-      }
-    },
+    "builds": [
+      { "src": "dist/index.js", "use": "@vercel/node" },
+      { "src": "dist/public/**/*", "use": "@vercel/static" }
+    ],
     "routes": [
-      { "src": "/api/(.*)", "dest": "/api/index.js" },
-      { "src": "/(.*)", "dest": "/index.html" }
+      { "src": "/api/(.*)", "dest": "dist/index.js" },
+      { "src": "/(.*)", "dest": "dist/public/index.html" }
     ]
   }
+  
