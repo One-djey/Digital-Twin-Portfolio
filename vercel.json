@@ -1,15 +1,16 @@
 {
     "version": 2,
     "installCommand": "npm install",
-    "buildCommand": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "outputDirectory": "dist",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist/public",
     "devCommand": "vite",
-    "builds": [
-      { "src": "dist/index.js", "use": "@vercel/node" }
-    ],
+    "functions": {
+      "api/index.js": {
+        "runtime": "nodejs18.x"
+      }
+    },
     "routes": [
-      { "src": "/api/(.*)", "dest": "dist/index.js" },
-      { "src": "/(.*)", "dest": "/dist/public/index.html" }
+      { "src": "/api/(.*)", "dest": "/api/index.js" },
+      { "src": "/(.*)", "dest": "/index.html" }
     ]
   }
-  
