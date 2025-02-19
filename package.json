@@ -7,8 +7,8 @@
     "dev": "tsx server/index.ts",
     "dev-windows": "node --loader ts-node/esm server/index.ts",
     "dev:client": "vite",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server",
-    "start": "node dist/server/index.js",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "start": "node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
