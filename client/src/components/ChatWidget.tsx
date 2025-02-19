@@ -38,6 +38,7 @@ const ChatContent = ({
   inputRef,
   scrollAreaRef,
   isHomePage,
+  chatClass
 }: {
   messages: ChatMessage[];
   isPending: boolean;
@@ -45,6 +46,7 @@ const ChatContent = ({
   inputRef: React.RefObject<HTMLInputElement>;
   scrollAreaRef: React.RefObject<HTMLDivElement>;
   isHomePage: boolean;
+  chatClass?: string;
 }) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -59,6 +61,7 @@ const ChatContent = ({
   };
 
   const scrollToBottom = () => {
+    console.log("yey")
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
@@ -69,8 +72,8 @@ const ChatContent = ({
   }, [messages, isPending]);
 
   return (
-    <div className="flex flex-col h-full">
-      <ScrollArea ref={scrollAreaRef} className="flex-grow chat-scroll-area">
+    <div className={"flex flex-col h-full " + chatClass}>
+      <ScrollArea id="helloword" ref={scrollAreaRef}  className="flex-grow chat-scroll-area">
         <div className="flex flex-col h-full">
           {isHomePage && (
             <div className="text-center mb-4 pt-4">
@@ -167,7 +170,7 @@ const ChatContent = ({
           </Button>
         </div>
       </form>
-      <p className="text-center text-muted-foreground text-xs">Powered by {portfolioData.ai_clone.model}</p>
+    {!chatClass &&  <p className="text-center text-muted-foreground text-xs">Powered by {portfolioData.ai_clone.model}</p>}
     </div>
   );
 };
@@ -370,6 +373,7 @@ const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMes
           inputRef={inputRef}
           scrollAreaRef={scrollAreaRef}
           isHomePage={isHomePage}
+          chatClass="pb-16"
         />
       </Card>
     );
@@ -437,6 +441,7 @@ const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMes
                 inputRef={inputRef}
                 scrollAreaRef={scrollAreaRef}
                 isHomePage={isHomePage}
+                chatClass="pb-16"
               />
             </Card>
           </motion.div>

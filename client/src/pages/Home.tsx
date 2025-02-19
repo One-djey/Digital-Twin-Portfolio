@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ChatWidget from "@/components/ChatWidget";
+import { portfolioData } from "@shared/portfolio.ts";
 
 export default function Home() {
   const [chatStarted, setChatStarted] = useState(false);
