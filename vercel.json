@@ -6,7 +6,7 @@
     "devCommand": "vite",
     "functions": {
       "api/index.js": {
-        "runtime": "nodejs22.x"
+        "runtime": "nodejs18.x"
       }
     },
     "routes": [
