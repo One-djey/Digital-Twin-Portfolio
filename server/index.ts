@@ -42,7 +42,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const environment = process.env.NODE_ENV;
+const environment = process.env.VERCEL_ENV || process.env.NODE_ENV;
 console.log(`The application is starting ${environment} mode...`);
 
 const serverPromise = (async () => {
