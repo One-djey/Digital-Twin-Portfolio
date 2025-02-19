@@ -7,6 +7,7 @@ import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
 import { isUUID } from "@shared/uuidv4.ts";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const MAX_MESSAGES = 10;  // count both, user & assisant, messages.
   app.use(logRequest);
 
   app.post("/api/contact", async (req, res) => {
@@ -137,8 +138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add user's message
       await addMessage(user_id, "user", result.data.content);
 
-      // Get AI response
+      // Check if messages limit is met
       const messages = await getUserMessages(user_id);
+      if(messages.length >= MAX_MESSAGES){
+        logger.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`)
+        res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
+        return;
+      }
+
+      // Get AI response
       const aiResponse = await digitalTwinAgent.getResponse(messages);
 
       // Add AI' response

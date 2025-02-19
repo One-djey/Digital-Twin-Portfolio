@@ -238,11 +238,25 @@ const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMes
       queryClient.invalidateQueries({ queryKey: ["/api/chat", userId] });
       inputRef.current?.focus();
     },
-    onError: (error) => {
-      console.error("Mutation error:", error);
+    onError: (error: Error) => {
+      let errorMessage = error.message
+      let errorCode = '';
+
+      // Check if the error message contains a code followed by a colon
+      const messageParts = error.message.split(':');
+      if (messageParts.length > 1) {
+        errorCode = messageParts[0].trim(); // First part is the error code
+        try {
+          const responseBody = JSON.parse(messageParts.slice(1).join(':').trim());
+          errorMessage = responseBody.message;
+        } catch (e) {
+          console.error("Failed to parse error message:", e);
+        }
+      }
+      console.error("Failed to send chat message:", errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
+        title: `Error ${errorCode}`,
+        description: errorMessage,
         variant: "destructive",
       });
     },

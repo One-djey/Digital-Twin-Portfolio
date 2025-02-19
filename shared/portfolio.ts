@@ -9,7 +9,7 @@ export const portfolioData = {
       "avatar": "https://media.licdn.com/dms/image/v2/D4D03AQHb7UR8SvGc-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1678795828713?e=1744848000&v=beta&t=GztAvIY1yqiAoJx1AKWlfHv-ognqxU9_mFM9OdtcZ1s",  // Use in Home page
       "location": "Nice, FRANCE / Full remote",
       "email": "contact@jeremy-maisse.com",
-      "rates": "550€/day",
+      "phone": "+337 52 02 00 95",
       "languages": ["French", "English"]
     },
     "intro": {
