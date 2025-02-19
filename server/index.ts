@@ -51,21 +51,17 @@ const serverPromise = (async () => {
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
     res.status(status).json({ message });
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  if(app.get("env") != "vercel"){  // Donot run the server on Vercel (export bellow use it as a serverless function)
+  if (!process.env.VERCEL) {
     const PORT: number = Number(process.env.PORT) || 5000;
     const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
     server.listen(PORT, HOSTNAME, () => {
@@ -75,7 +71,7 @@ const serverPromise = (async () => {
   return app;
 })();
 
-// Serverless function export for Vercel
+// Export pour Vercel (fonction serverless)
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const appInstance = await serverPromise;
   return appInstance(req as any, res as any);
