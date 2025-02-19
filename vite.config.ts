@@ -11,7 +11,7 @@ export default defineConfig({
   plugins: [react(), runtimeErrorOverlay(), themePlugin()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
+      "@": path.resolve(__dirname, "dist", "client"),
       "@shared": path.resolve(__dirname, "shared"),
     },
   },
