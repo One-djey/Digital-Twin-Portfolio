@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { registerRoutes } from "./routes.ts";
-import { setupVite, serveStatic, log } from "./vite.ts";
+// import { setupVite, serveStatic, log } from "./vite.ts";
 import 'dotenv/config';
 import { logRequest } from '../shared/logger.ts';
 
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
         logLine = logLine.slice(0, 79) + "…";
       }
 
-      log(logLine);
+      console.log(logLine);
     }
   });
 
@@ -57,13 +57,13 @@ const serverPromise = (async () => {
     throw err;
   });
 
-  if (!process.env.VERCEL) {
-    if (app.get("env") === "development") {
-      await setupVite(app, server);
-    } else {
-      serveStatic(app);
-    }
-  }
+  // if (!process.env.VERCEL) {
+  //   if (app.get("env") === "development") {
+  //     await setupVite(app, server);
+  //   } else {
+  //     serveStatic(app);
+  //   }
+  // }
 
   return app;
 })();
