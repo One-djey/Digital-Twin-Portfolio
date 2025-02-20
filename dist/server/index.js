@@ -1,5 +1,201 @@
-// server/index.ts
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import path, { dirname } from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { fileURLToPath } from "url";
+var __filename, __dirname, config, vite_config_default;
+var init_vite_config = __esm({
+  "vite.config.ts"() {
+    "use strict";
+    __filename = fileURLToPath(import.meta.url);
+    __dirname = dirname(__filename);
+    config = {
+      plugins: [react(), runtimeErrorOverlay(), themePlugin()],
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "client", "src"),
+          "@shared": path.resolve(__dirname, "shared")
+        }
+      },
+      root: path.resolve(__dirname, "client"),
+      build: {
+        outDir: path.resolve(__dirname, "dist/client"),
+        emptyOutDir: true
+      }
+    };
+    vite_config_default = defineConfig(config);
+  }
+});
+
+// shared/logger.ts
+import winston from "winston";
+import "winston-daily-rotate-file";
+var Logger, logger;
+var init_logger = __esm({
+  "shared/logger.ts"() {
+    "use strict";
+    Logger = class {
+      logger;
+      constructor() {
+        const transports = [new winston.transports.Console()];
+        if (!process.env.VERCEL) {
+          transports.push(
+            new winston.transports.DailyRotateFile(
+              {
+                level: "debug",
+                filename: "logs/%DATE%.log",
+                datePattern: "YYYY-MM-DD_HH-mm",
+                //zippedArchive: true,
+                maxSize: "20m",
+                maxFiles: "14d"
+              }
+            )
+          );
+        }
+        this.logger = winston.createLogger({
+          level: "info",
+          format: winston.format.printf(({ level, message }) => {
+            return `[${level}] [${(/* @__PURE__ */ new Date()).toLocaleString()}] ${message}`;
+          }),
+          transports
+        });
+        this.overrideConsole();
+      }
+      overrideConsole() {
+        console.trace = (...args) => {
+          this.logger.debug(`TRACE: ${args.join(" ")}`);
+        };
+        console.log = (...args) => {
+          this.logger.info(args.join(" "));
+        };
+        console.warn = (...args) => {
+          this.logger.warn(args.join(" "));
+        };
+        console.error = (...args) => {
+          this.logger.error(args.join(" "));
+        };
+      }
+      log(message, source = "app") {
+        this.info(message, source);
+      }
+      debug(message, source = "app") {
+        this.logger.debug(`[${source}] ${message}`);
+      }
+      info(message, source = "app") {
+        this.logger.info(`[${source}] ${message}`);
+      }
+      warn(message, source = "app") {
+        this.logger.warn(`[${source}] ${message}`);
+      }
+      error(message, source = "app") {
+        this.logger.error(`[${source}] ${message}`);
+      }
+    };
+    logger = new Logger();
+  }
+});
+
+// server/vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log,
+  serveStatic: () => serveStatic,
+  setupVite: () => setupVite
+});
 import express from "express";
+import fs from "fs";
+import path2, { dirname as dirname2 } from "path";
+import { fileURLToPath as fileURLToPath2 } from "url";
+import { nanoid } from "nanoid";
+async function setupVite(app2, server) {
+  log("Setting up Vite...");
+  const { createServer: createServer2 } = await import("vite");
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createServer2({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      info: (msg) => logger.info(msg),
+      warn: (msg) => logger.warn(msg),
+      error: (msg, options) => {
+        logger.error(msg, options);
+        process.exit(1);
+      },
+      warnOnce: () => {
+      },
+      clearScreen: () => {
+      },
+      hasErrorLogged: () => false,
+      hasWarned: false
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path2.resolve(
+        __dirname2,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const distPath = path2.resolve(__dirname2, "..", "client");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path2.resolve(distPath, "index.html"));
+  });
+}
+var __filename2, __dirname2, log;
+var init_vite = __esm({
+  "server/vite.ts"() {
+    "use strict";
+    init_vite_config();
+    init_logger();
+    __filename2 = fileURLToPath2(import.meta.url);
+    __dirname2 = dirname2(__filename2);
+    log = (message, source = "express") => logger.info(message, source);
+  }
+});
+
+// server/index.ts
+import express2 from "express";
 
 // server/routes.ts
 import { createServer } from "http";
@@ -594,14 +790,12 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/chat", async (req, res) => {
     try {
-      console.log("Check user ID format");
       const user_id = req.body?.user_id;
       if (!user_id || !isUUID(user_id)) {
         console.error(`User ID ${user_id}.`);
         res.status(400).json({ message: "Invalid user ID" });
         return;
       }
-      console.log("Check message format");
       const requestChatMessage = req.body?.message;
       const result = insertChatMessageSchema.safeParse(requestChatMessage);
       if (!requestChatMessage || !result.success) {
@@ -609,24 +803,18 @@ async function registerRoutes(app2) {
         res.status(400).json({ message: "Invalid message format" });
         return;
       }
-      console.log("Create user if not exists");
       if (!await userExistsById(user_id)) {
         await addUser(user_id);
       }
-      console.log("Add user's message");
       await addMessage(user_id, "user", result.data.content);
-      console.log("Check message limit");
       const messages = await getUserMessages(user_id);
       if (messages.length >= MAX_MESSAGES) {
         console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
         res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
         return;
       }
-      console.log("Get AI response");
       const aiResponse = await digitalTwinAgent.getResponse(messages);
-      console.log("Add AI response");
       await addMessage(user_id, "assistant", aiResponse);
-      console.log("Respond with all messages");
       const allMessages = await getUserMessages(user_id);
       allMessages.forEach((msg) => console.info(`[chat] ${msg.role}: ${msg.content}`));
       res.status(201).json(allMessages);
@@ -641,14 +829,14 @@ async function registerRoutes(app2) {
 
 // server/index.ts
 import "dotenv/config";
-var app = express();
+var app = express2();
 if (!process.env.VERCEL) {
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express2.json());
+  app.use(express2.urlencoded({ extended: false }));
 }
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  const path3 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -657,8 +845,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (path3.startsWith("/api")) {
+      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -680,6 +868,19 @@ var serverPromise = (async () => {
     res.status(status).json({ message });
     throw err;
   });
+  if (!process.env.VERCEL) {
+    const { setupVite: setupVite2, serveStatic: serveStatic2 } = await Promise.resolve().then(() => (init_vite(), vite_exports));
+    if (app.get("env") === "development") {
+      await setupVite2(app, server);
+    } else {
+      serveStatic2(app);
+    }
+    const PORT = Number(process.env.PORT) || 5e3;
+    const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
+    server.listen(PORT, HOSTNAME, () => {
+      console.log(`serving on ${HOSTNAME}:${PORT}`);
+    });
+  }
   return app;
 })();
 async function handler(req, res) {

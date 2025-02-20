@@ -112,7 +112,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/chat", async (req, res) => {
     try {
       // Check user_id format
-      console.log("Check user ID format");
       const user_id: string = req.body?.user_id;
       if(!user_id || !isUUID(user_id)){
         console.error(`User ID ${user_id}.`)
@@ -121,7 +120,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check message format
-      console.log("Check message format");
       const requestChatMessage = req.body?.message;
       const result = insertChatMessageSchema.safeParse(requestChatMessage);
       if (!requestChatMessage || !result.success) {
@@ -131,17 +129,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create user if not exists
-      console.log("Create user if not exists");
       if(!await userExistsById(user_id)){
         await addUser(user_id);
       }
 
       // Add user's message
-      console.log("Add user's message");
       await addMessage(user_id, "user", result.data.content);
 
       // Check if messages limit is met
-      console.log("Check message limit");
       const messages = await getUserMessages(user_id);
       if(messages.length >= MAX_MESSAGES){
         console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`)
@@ -150,15 +145,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get AI response
-      console.log("Get AI response");
       const aiResponse = await digitalTwinAgent.getResponse(messages);
 
       // Add AI' response
-      console.log("Add AI response");
       await addMessage(user_id, "assistant", aiResponse);
 
       // Respond with all messages
-      console.log("Respond with all messages");
       const allMessages = await getUserMessages(user_id);
       allMessages.forEach((msg: any) => console.info(`[chat] ${msg.role}: ${msg.content}`));
       res.status(201).json(allMessages);

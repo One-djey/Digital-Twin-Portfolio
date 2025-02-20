@@ -266,6 +266,15 @@ const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMes
   });
 
   const resetChat = async () => {
+
+    // For dev only
+    toast({
+      title: "Warning",
+      description: "Deactivated feature",
+      variant: "destructive",
+    });
+    return;
+
     try {
       queryClient.setQueryData<ChatMessage[]>(["/api/chat", userId], [introMessage]);
 
