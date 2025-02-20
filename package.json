@@ -118,5 +118,8 @@
   "build": {
     "outDir": "dist/client",
     "emptyOutDir": true
+  },
+  "resolutions": {
+    "rollup": "npm:@rollup/wasm-node"
   }
 }
