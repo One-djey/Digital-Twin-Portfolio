@@ -99,23 +99,27 @@ import "winston-daily-rotate-file";
 var Logger = class {
   logger;
   constructor() {
-    const transport = new winston.transports.DailyRotateFile({
-      level: "debug",
-      filename: "logs/%DATE%.log",
-      datePattern: "YYYY-MM-DD_HH-mm",
-      //zippedArchive: true,
-      maxSize: "20m",
-      maxFiles: "14d"
-    });
+    const transports = [new winston.transports.Console()];
+    if (!process.env.VERCEL) {
+      transports.push(
+        new winston.transports.DailyRotateFile(
+          {
+            level: "debug",
+            filename: "logs/%DATE%.log",
+            datePattern: "YYYY-MM-DD_HH-mm",
+            //zippedArchive: true,
+            maxSize: "20m",
+            maxFiles: "14d"
+          }
+        )
+      );
+    }
     this.logger = winston.createLogger({
       level: "info",
       format: winston.format.printf(({ level, message }) => {
         return `[${level}] [${(/* @__PURE__ */ new Date()).toLocaleString()}] ${message}`;
       }),
-      transports: [
-        new winston.transports.Console(),
-        transport
-      ]
+      transports
     });
     this.overrideConsole();
   }
