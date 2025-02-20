@@ -93,68 +93,6 @@ async function addContactMessage(userId, message) {
   return await db.insert(contactMessages).values({ userId, message }).returning();
 }
 
-// shared/logger.ts
-import winston from "winston";
-import "winston-daily-rotate-file";
-var Logger = class {
-  logger;
-  constructor() {
-    const transports = [new winston.transports.Console()];
-    if (!process.env.VERCEL) {
-      transports.push(
-        new winston.transports.DailyRotateFile(
-          {
-            level: "debug",
-            filename: "logs/%DATE%.log",
-            datePattern: "YYYY-MM-DD_HH-mm",
-            //zippedArchive: true,
-            maxSize: "20m",
-            maxFiles: "14d"
-          }
-        )
-      );
-    }
-    this.logger = winston.createLogger({
-      level: "info",
-      format: winston.format.printf(({ level, message }) => {
-        return `[${level}] [${(/* @__PURE__ */ new Date()).toLocaleString()}] ${message}`;
-      }),
-      transports
-    });
-    this.overrideConsole();
-  }
-  overrideConsole() {
-    console.trace = (...args) => {
-      this.logger.debug(`TRACE: ${args.join(" ")}`);
-    };
-    console.log = (...args) => {
-      this.logger.info(args.join(" "));
-    };
-    console.warn = (...args) => {
-      this.logger.warn(args.join(" "));
-    };
-    console.error = (...args) => {
-      this.logger.error(args.join(" "));
-    };
-  }
-  log(message, source = "app") {
-    this.info(message, source);
-  }
-  debug(message, source = "app") {
-    this.logger.debug(`[${source}] ${message}`);
-  }
-  info(message, source = "app") {
-    this.logger.info(`[${source}] ${message}`);
-  }
-  warn(message, source = "app") {
-    this.logger.warn(`[${source}] ${message}`);
-  }
-  error(message, source = "app") {
-    this.logger.error(`[${source}] ${message}`);
-  }
-};
-var logger = new Logger();
-
 // server/ai/APIs/OpenAI.ts
 import OpenAI from "openai";
 import "dotenv/config";
@@ -585,20 +523,20 @@ async function registerRoutes(app2) {
       const receivedContact = contactRequest.contact;
       const userResult = insertUserSchema.safeParse(receivedUser);
       if (!receivedUser || !userResult.success) {
-        logger.error(`Invalid user format: ${JSON.stringify(receivedUser)}`);
+        console.error(`Invalid user format: ${JSON.stringify(receivedUser)}`);
         res.status(400).json({ message: "Invalid user format" });
         return;
       }
       const contactResult = insertContactSchema.safeParse(receivedContact);
       if (!receivedContact || !contactResult.success) {
-        logger.error(`Invalid user format: ${JSON.stringify(receivedContact)}`);
+        console.error(`Invalid user format: ${JSON.stringify(receivedContact)}`);
         res.status(400).json({ message: "Invalid contact format" });
         return;
       }
       if (!await userExistsById(userResult.data.id)) {
         const newUser = await addUser(userResult.data.id, userResult.data.name, userResult.data.email);
         if (!newUser) {
-          logger.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
+          console.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
           res.status(500).json({ message: "Failed to add user." });
           return;
         }
@@ -607,14 +545,14 @@ async function registerRoutes(app2) {
       }
       const newContact = await addContactMessage(contactResult.data.userId, contactResult.data.message);
       if (!newContact) {
-        logger.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
+        console.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
         res.status(500).json({ message: "Failed to add contact message." });
         return;
       }
-      logger.info(`New contact form saved!`);
+      console.info(`New contact form saved!`);
       res.status(201).json({});
     } catch (error) {
-      logger.error("Error adding user: " + error.message);
+      console.error("Error adding user: " + error.message);
       res.status(500).json({ message: "Failed to add user" });
     }
   });
@@ -622,7 +560,7 @@ async function registerRoutes(app2) {
     try {
       const user_id = req.body?.user_id;
       if (!user_id || !await userExistsById(user_id)) {
-        logger.error(`User ID ${user_id} not found.`);
+        console.error(`User ID ${user_id} not found.`);
         res.status(400).json({ message: "Invalid User ID" });
         return;
       }
@@ -630,7 +568,7 @@ async function registerRoutes(app2) {
       const messages = await getUserMessages(user_id);
       res.status(205).json(messages);
     } catch (error) {
-      logger.error("Error resetting messages: " + error.message);
+      console.error("Error resetting messages: " + error.message);
       res.status(500).json({ message: "Failed to reset messages" });
     }
   });
@@ -638,19 +576,19 @@ async function registerRoutes(app2) {
     try {
       const user_id = req.query?.user_id;
       if (!user_id || typeof user_id != "string") {
-        logger.error(`Invalid user ID ${user_id} format.`);
+        console.error(`Invalid user ID ${user_id} format.`);
         res.status(400).json({ message: "Invalid User ID format" });
         return;
       }
       if (!await userExistsById(user_id)) {
-        logger.warn(`User ID ${user_id} not found, return empty message list`);
+        console.warn(`User ID ${user_id} not found, return empty message list`);
         res.status(204).json([]);
         return;
       }
       const messages = await getUserMessages(user_id);
       res.status(200).json(messages);
     } catch (error) {
-      logger.error("Error fetching messages: " + error.message);
+      console.error("Error fetching messages: " + error.message);
       res.status(500).json({ message: "Failed to fetch messages" });
     }
   });
@@ -659,7 +597,7 @@ async function registerRoutes(app2) {
       console.log("Check user ID format");
       const user_id = req.body?.user_id;
       if (!user_id || !isUUID(user_id)) {
-        logger.error(`User ID ${user_id}.`);
+        console.error(`User ID ${user_id}.`);
         res.status(400).json({ message: "Invalid user ID" });
         return;
       }
@@ -667,7 +605,7 @@ async function registerRoutes(app2) {
       const requestChatMessage = req.body?.message;
       const result = insertChatMessageSchema.safeParse(requestChatMessage);
       if (!requestChatMessage || !result.success) {
-        logger.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`);
+        console.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`);
         res.status(400).json({ message: "Invalid message format" });
         return;
       }
@@ -680,7 +618,7 @@ async function registerRoutes(app2) {
       console.log("Check message limit");
       const messages = await getUserMessages(user_id);
       if (messages.length >= MAX_MESSAGES) {
-        logger.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
+        console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
         res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
         return;
       }
@@ -690,10 +628,10 @@ async function registerRoutes(app2) {
       await addMessage(user_id, "assistant", aiResponse);
       console.log("Respond with all messages");
       const allMessages = await getUserMessages(user_id);
-      allMessages.forEach((msg) => logger.info(`[chat] ${msg.role}: ${msg.content}`));
+      allMessages.forEach((msg) => console.info(`[chat] ${msg.role}: ${msg.content}`));
       res.status(201).json(allMessages);
     } catch (error) {
-      logger.error("Error processing chat: " + error.message);
+      console.error("Error processing chat: " + error.message);
       res.status(500).json({ message: "Failed to process chat message" });
     }
   });

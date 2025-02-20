@@ -3,7 +3,7 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { registerRoutes } from "./routes.ts";
 // import { setupVite, serveStatic, log } from "./vite.ts";
 import 'dotenv/config';
-import { logRequest } from '../shared/logger.ts';
+//import { logRequest } from '../shared/logger.ts';
 
 const app = express();
 

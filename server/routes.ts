@@ -1,7 +1,6 @@
 import { Express } from "express";
 import { createServer, type Server } from "http";
 import { addUser, userExistsById, addMessage, getUserMessages, resetUserMessages, addContactMessage, updateUser } from "./storage.ts";
-import { logger } from '../shared/logger.ts';
 import { insertChatMessageSchema, insertContactSchema, insertUserSchema } from '../shared/schema.ts';
 import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
 import { isUUID } from "@shared/uuidv4.ts";
@@ -18,13 +17,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Vérifiez que les champs nécessaires sont présents
       const userResult = insertUserSchema.safeParse(receivedUser);
       if (!receivedUser || !userResult.success) {
-        logger.error(`Invalid user format: ${JSON.stringify(receivedUser)}`)
+        console.error(`Invalid user format: ${JSON.stringify(receivedUser)}`)
         res.status(400).json({ message: "Invalid user format" });
         return;
       }
       const contactResult = insertContactSchema.safeParse(receivedContact);
       if (!receivedContact || !contactResult.success) {
-        logger.error(`Invalid user format: ${JSON.stringify(receivedContact)}`)
+        console.error(`Invalid user format: ${JSON.stringify(receivedContact)}`)
         res.status(400).json({ message: "Invalid contact format" });
         return;
       }
@@ -35,7 +34,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
         // Vérifiez si l'utilisateur a été ajouté avec succès
         if (!newUser) {
-          logger.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
+          console.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
           res.status(500).json({ message: "Failed to add user." });
           return;
         }
@@ -49,15 +48,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
       // Vérifiez si le formulaire de contact a été ajouté avec succès
       if (!newContact) {
-        logger.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
+        console.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
         res.status(500).json({ message: "Failed to add contact message." });
         return;
       }
       
-      logger.info(`New contact form saved!`)
+      console.info(`New contact form saved!`)
       res.status(201).json({});
     } catch (error: any) {
-      logger.error("Error adding user: " + error.message);
+      console.error("Error adding user: " + error.message);
       res.status(500).json({ message: "Failed to add user" });
     }
   });
@@ -68,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check user ID exists
       const user_id: string = req.body?.user_id;
       if(!user_id || !await userExistsById(user_id)){
-        logger.error(`User ID ${user_id} not found.`)
+        console.error(`User ID ${user_id} not found.`)
         res.status(400).json({ message: "Invalid User ID" });
         return;
       }
@@ -80,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await getUserMessages(user_id);
       res.status(205).json(messages);
     } catch (error:any) {
-      logger.error("Error resetting messages: " + error.message);
+      console.error("Error resetting messages: " + error.message);
       res.status(500).json({ message: "Failed to reset messages" });
     }
   });
@@ -90,13 +89,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check user ID format
       const user_id = req.query?.user_id;
       if(!user_id || typeof user_id != 'string'){
-        logger.error(`Invalid user ID ${user_id} format.`);
+        console.error(`Invalid user ID ${user_id} format.`);
         res.status(400).json({ message: "Invalid User ID format" });
         return;
       }
       // Check user ID exists
       if(!await userExistsById(user_id)){
-        logger.warn(`User ID ${user_id} not found, return empty message list`);
+        console.warn(`User ID ${user_id} not found, return empty message list`);
         res.status(204).json([]);
         return;
       }
@@ -105,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await getUserMessages(user_id);
       res.status(200).json(messages);
     } catch (error:any) {
-      logger.error("Error fetching messages: " + error.message);
+      console.error("Error fetching messages: " + error.message);
       res.status(500).json({ message: "Failed to fetch messages" });
     }
   });
@@ -116,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Check user ID format");
       const user_id: string = req.body?.user_id;
       if(!user_id || !isUUID(user_id)){
-        logger.error(`User ID ${user_id}.`)
+        console.error(`User ID ${user_id}.`)
         res.status(400).json({ message: "Invalid user ID" });
         return;
       }
@@ -126,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestChatMessage = req.body?.message;
       const result = insertChatMessageSchema.safeParse(requestChatMessage);
       if (!requestChatMessage || !result.success) {
-        logger.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`)
+        console.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`)
         res.status(400).json({ message: "Invalid message format" });
         return;
       }
@@ -145,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Check message limit");
       const messages = await getUserMessages(user_id);
       if(messages.length >= MAX_MESSAGES){
-        logger.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`)
+        console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`)
         res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
         return;
       }
@@ -161,10 +160,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Respond with all messages
       console.log("Respond with all messages");
       const allMessages = await getUserMessages(user_id);
-      allMessages.forEach((msg: any) => logger.info(`[chat] ${msg.role}: ${msg.content}`));
+      allMessages.forEach((msg: any) => console.info(`[chat] ${msg.role}: ${msg.content}`));
       res.status(201).json(allMessages);
     } catch (error:any) {
-      logger.error("Error processing chat: " + error.message);
+      console.error("Error processing chat: " + error.message);
       res.status(500).json({ message: "Failed to process chat message" });
     }
   });
