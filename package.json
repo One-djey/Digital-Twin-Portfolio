@@ -119,7 +119,9 @@
     "outDir": "dist/client",
     "emptyOutDir": true
   },
-  "resolutions": {
-    "rollup": "npm:@rollup/wasm-node"
+  "overrides": {
+    "vite": {
+      "rollup": "npm:@rollup/wasm-node"
+    }
   }
 }
