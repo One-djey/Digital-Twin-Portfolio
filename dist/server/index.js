@@ -118,16 +118,16 @@ import express from "express";
 import fs from "fs";
 import path2, { dirname as dirname2 } from "path";
 import { fileURLToPath as fileURLToPath2 } from "url";
-import { createServer as createViteServer } from "vite";
 import { nanoid } from "nanoid";
 async function setupVite(app2, server) {
   log("Setting up Vite...");
+  const { createServer: createServer2 } = await import("vite");
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
     allowedHosts: true
   };
-  const vite = await createViteServer({
+  const vite = await createServer2({
     ...vite_config_default,
     configFile: false,
     customLogger: {
@@ -866,7 +866,7 @@ app.use((req, res, next) => {
   });
   next();
 });
-var environment = process.env.VERCEL || process.env.NODE_ENV;
+var environment = process.env.VERCEL_ENV || process.env.NODE_ENV;
 console.log(`The application is starting in ${environment} mode...`);
 var serverPromise = (async () => {
   const server = await registerRoutes(app);

@@ -43,7 +43,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const environment = process.env.VERCEL || process.env.NODE_ENV;
+const environment = process.env.VERCEL_ENV || process.env.NODE_ENV;
 console.log(`The application is starting in ${environment} mode...`);
 
 const serverPromise = (async () => {
@@ -63,7 +63,7 @@ const serverPromise = (async () => {
     } else {
       serveStatic(app);
     }
-    
+
     const PORT: number = Number(process.env.PORT) || 5000;
     const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
     server.listen(PORT, HOSTNAME, () => {
