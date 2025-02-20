@@ -150,15 +150,6 @@ var Logger = class {
   }
 };
 var logger = new Logger();
-var logRequest = (req, res, next) => {
-  const start = Date.now();
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    const logLine = `${req.method} ${req.path} ${res.statusCode} in ${duration}ms`;
-    logger.info(logLine);
-  });
-  next();
-};
 
 // server/ai/APIs/OpenAI.ts
 import OpenAI from "openai";
@@ -583,7 +574,6 @@ function isUUID(str) {
 // server/routes.ts
 async function registerRoutes(app2) {
   const MAX_MESSAGES = 10;
-  app2.use(logRequest);
   app2.post("/api/contact", async (req, res) => {
     try {
       const contactRequest = req.body;
@@ -662,12 +652,14 @@ async function registerRoutes(app2) {
   });
   app2.post("/api/chat", async (req, res) => {
     try {
+      console.log("Check user ID format");
       const user_id = req.body?.user_id;
       if (!user_id || !isUUID(user_id)) {
         logger.error(`User ID ${user_id}.`);
         res.status(400).json({ message: "Invalid user ID" });
         return;
       }
+      console.log("Check message format");
       const requestChatMessage = req.body?.message;
       const result = insertChatMessageSchema.safeParse(requestChatMessage);
       if (!requestChatMessage || !result.success) {
@@ -675,18 +667,24 @@ async function registerRoutes(app2) {
         res.status(400).json({ message: "Invalid message format" });
         return;
       }
+      console.log("Create user if not exists");
       if (!await userExistsById(user_id)) {
         await addUser(user_id);
       }
+      console.log("Add user's message");
       await addMessage(user_id, "user", result.data.content);
+      console.log("Check message limit");
       const messages = await getUserMessages(user_id);
       if (messages.length >= MAX_MESSAGES) {
         logger.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
         res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
         return;
       }
+      console.log("Get AI response");
       const aiResponse = await digitalTwinAgent.getResponse(messages);
+      console.log("Add AI response");
       await addMessage(user_id, "assistant", aiResponse);
+      console.log("Respond with all messages");
       const allMessages = await getUserMessages(user_id);
       allMessages.forEach((msg) => logger.info(`[chat] ${msg.role}: ${msg.content}`));
       res.status(201).json(allMessages);
@@ -802,9 +800,10 @@ function serveStatic(app2) {
 // server/index.ts
 import "dotenv/config";
 var app = express2();
-app.use(logRequest);
-app.use(express2.json());
-app.use(express2.urlencoded({ extended: false }));
+if (!process.env.VERCEL) {
+  app.use(express2.json());
+  app.use(express2.urlencoded({ extended: false }));
+}
 app.use((req, res, next) => {
   const start = Date.now();
   const path3 = req.path;
@@ -829,8 +828,8 @@ app.use((req, res, next) => {
   });
   next();
 });
-var environment = process.env.VERCEL_ENV || process.env.NODE_ENV;
-console.log(`The application is starting ${environment} mode...`);
+var environment = process.env.VERCEL || process.env.NODE_ENV;
+console.log(`The application is starting in ${environment} mode...`);
 var serverPromise = (async () => {
   const server = await registerRoutes(app);
   app.use((err, _req, res, _next) => {
@@ -845,11 +844,6 @@ var serverPromise = (async () => {
     } else {
       serveStatic(app);
     }
-    const PORT = Number(process.env.PORT) || 5e3;
-    const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
-    server.listen(PORT, HOSTNAME, () => {
-      log(`serving on ${HOSTNAME}:${PORT}`);
-    });
   }
   return app;
 })();

@@ -8,9 +8,11 @@ import { logRequest } from '../shared/logger.ts';
 const app = express();
 
 // Assurez-vous que le middleware de logging est utilisé avant les autres middlewares
-app.use(logRequest); // Utilisez le middleware de logging personnalisé
-app.use(express.json()); // Middleware pour parser le JSON
-app.use(express.urlencoded({ extended: false }));
+// app.use(logRequest); // Utilisez le middleware de logging personnalisé
+if (!process.env.VERCEL) {
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+}
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -42,8 +44,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const environment = process.env.VERCEL_ENV || process.env.NODE_ENV;
-console.log(`The application is starting ${environment} mode...`);
+const environment = process.env.VERCEL || process.env.NODE_ENV;
+console.log(`The application is starting in ${environment} mode...`);
 
 const serverPromise = (async () => {
   const server = await registerRoutes(app);
@@ -61,18 +63,13 @@ const serverPromise = (async () => {
     } else {
       serveStatic(app);
     }
-
-    const PORT: number = Number(process.env.PORT) || 5000;
-    const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
-    server.listen(PORT, HOSTNAME, () => {
-      log(`serving on ${HOSTNAME}:${PORT}`);
-    });
   }
+
   return app;
 })();
 
 // Export pour Vercel (fonction serverless)
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const appInstance = await serverPromise;
-  return appInstance(req as any, res as any);
+  return appInstance(req, res);
 }
