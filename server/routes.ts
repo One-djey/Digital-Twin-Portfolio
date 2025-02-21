@@ -6,7 +6,7 @@ import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
 import { isUUID } from "@shared/uuidv4.ts";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const MAX_MESSAGES = 10;  // count both, user & assisant, messages.
+  const MAX_MESSAGES = 20;  // count both, user & assisant, messages.
 
   app.post("/api/contact", async (req, res) => {
     try {
