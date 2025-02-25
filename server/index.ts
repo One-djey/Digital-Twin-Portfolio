@@ -56,21 +56,21 @@ const serverPromise = (async () => {
     throw err;
   });
 
-   // TODO: fix bug: Uncomment those line to run locally, but don't deploy them on Vercel
-   if (!process.env.VERCEL) {
-     const { setupVite, serveStatic } = await import("./vite.ts");
-     if (app.get("env") === "development") {
-       await setupVite(app, server);
-     } else {
-       serveStatic(app);
-     }
+   //// TODO: fix bug: Uncomment those line to run locally, but don't deploy them on Vercel
+   //if (!process.env.VERCEL) {
+   //  const { setupVite, serveStatic } = await import("./vite.ts");
+   //  if (app.get("env") === "development") {
+   //    await setupVite(app, server);
+   //  } else {
+   //    serveStatic(app);
+   //  }
 
-     const PORT: number = Number(process.env.PORT) || 5000;
-     const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
-     server.listen(PORT, HOSTNAME, () => {
-       console.log(`serving on ${HOSTNAME}:${PORT}`);
-     });
-   }
+   //  const PORT: number = Number(process.env.PORT) || 5000;
+   //  const HOSTNAME: string = process.env.HOSTNAME || "0.0.0.0";
+   //  server.listen(PORT, HOSTNAME, () => {
+   //    console.log(`serving on ${HOSTNAME}:${PORT}`);
+   //  });
+   //}
 
   return app;
 })();
