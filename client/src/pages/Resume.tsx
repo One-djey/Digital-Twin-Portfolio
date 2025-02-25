@@ -5,7 +5,7 @@ import { useState } from "react"; // Importer useState pour gérer l'état des c
 import ReactMarkdown from 'react-markdown'; // Importer ReactMarkdown
 import remarkGfm from 'remark-gfm'; // Importer remark-gfm pour le support de GFM
 
-export default function CV() {
+export default function Resume() {
   return (
     <div className="py-12">
       <motion.div
@@ -13,7 +13,7 @@ export default function CV() {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-3xl mx-auto"
       >
-        <h1 className="text-4xl font-bold mb-8 text-center">About Me</h1>
+        <h1 className="text-4xl font-bold mb-8 text-center">My Professional Journey</h1>
         
         <Card className="mb-8">
           <CardContent className="pt-6">

@@ -1,5 +1,201 @@
-// server/index.ts
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import path, { dirname } from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { fileURLToPath } from "url";
+var __filename, __dirname, config, vite_config_default;
+var init_vite_config = __esm({
+  "vite.config.ts"() {
+    "use strict";
+    __filename = fileURLToPath(import.meta.url);
+    __dirname = dirname(__filename);
+    config = {
+      plugins: [react(), runtimeErrorOverlay(), themePlugin()],
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "client", "src"),
+          "@shared": path.resolve(__dirname, "shared")
+        }
+      },
+      root: path.resolve(__dirname, "client"),
+      build: {
+        outDir: path.resolve(__dirname, "dist/client"),
+        emptyOutDir: true
+      }
+    };
+    vite_config_default = defineConfig(config);
+  }
+});
+
+// shared/logger.ts
+import winston from "winston";
+import "winston-daily-rotate-file";
+var Logger, logger;
+var init_logger = __esm({
+  "shared/logger.ts"() {
+    "use strict";
+    Logger = class {
+      logger;
+      constructor() {
+        const transports = [new winston.transports.Console()];
+        if (!process.env.VERCEL) {
+          transports.push(
+            new winston.transports.DailyRotateFile(
+              {
+                level: "debug",
+                filename: "logs/%DATE%.log",
+                datePattern: "YYYY-MM-DD_HH-mm",
+                //zippedArchive: true,
+                maxSize: "20m",
+                maxFiles: "14d"
+              }
+            )
+          );
+        }
+        this.logger = winston.createLogger({
+          level: "info",
+          format: winston.format.printf(({ level, message }) => {
+            return `[${level}] [${(/* @__PURE__ */ new Date()).toLocaleString()}] ${message}`;
+          }),
+          transports
+        });
+        this.overrideConsole();
+      }
+      overrideConsole() {
+        console.trace = (...args) => {
+          this.logger.debug(`TRACE: ${args.join(" ")}`);
+        };
+        console.log = (...args) => {
+          this.logger.info(args.join(" "));
+        };
+        console.warn = (...args) => {
+          this.logger.warn(args.join(" "));
+        };
+        console.error = (...args) => {
+          this.logger.error(args.join(" "));
+        };
+      }
+      log(message, source = "app") {
+        this.info(message, source);
+      }
+      debug(message, source = "app") {
+        this.logger.debug(`[${source}] ${message}`);
+      }
+      info(message, source = "app") {
+        this.logger.info(`[${source}] ${message}`);
+      }
+      warn(message, source = "app") {
+        this.logger.warn(`[${source}] ${message}`);
+      }
+      error(message, source = "app") {
+        this.logger.error(`[${source}] ${message}`);
+      }
+    };
+    logger = new Logger();
+  }
+});
+
+// server/vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log,
+  serveStatic: () => serveStatic,
+  setupVite: () => setupVite
+});
 import express from "express";
+import fs from "fs";
+import path2, { dirname as dirname2 } from "path";
+import { fileURLToPath as fileURLToPath2 } from "url";
+import { nanoid } from "nanoid";
+async function setupVite(app2, server) {
+  log("Setting up Vite...");
+  const { createServer: createServer2 } = await import("vite");
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createServer2({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      info: (msg) => logger.info(msg),
+      warn: (msg) => logger.warn(msg),
+      error: (msg, options) => {
+        logger.error(msg, options);
+        process.exit(1);
+      },
+      warnOnce: () => {
+      },
+      clearScreen: () => {
+      },
+      hasErrorLogged: () => false,
+      hasWarned: false
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path2.resolve(
+        __dirname2,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const distPath = path2.resolve(__dirname2, "..", "client");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path2.resolve(distPath, "index.html"));
+  });
+}
+var __filename2, __dirname2, log;
+var init_vite = __esm({
+  "server/vite.ts"() {
+    "use strict";
+    init_vite_config();
+    init_logger();
+    __filename2 = fileURLToPath2(import.meta.url);
+    __dirname2 = dirname2(__filename2);
+    log = (message, source = "express") => logger.info(message, source);
+  }
+});
+
+// server/index.ts
+import express2 from "express";
 
 // server/routes.ts
 import { createServer } from "http";
@@ -268,34 +464,40 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
   "projects": [
     // Use in Project page
     {
-      "title": "E-commerce Platform",
-      "description": "A modern e-commerce solution with AI-powered recommendations",
-      "image": "https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8"
+      "title": "Noah",
+      "description": "Rhino 3D naval plugin that calculates ship stability ",
+      "image": "https://www.rhino3d.com/images/marine-expressmarinedefault.jpg",
+      "url": null
     },
     {
-      "title": "Analytics Dashboard",
-      "description": "Real-time analytics and data visualization platform",
-      "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40"
+      "title": "Chess Verse",
+      "description": "Chess game with custom modes",
+      "image": "https://images.unsplash.com/photo-1529699211952-734e80c4d42b",
+      "url": "https://chess.jeremy-maisse.com/"
     },
     {
-      "title": "Social Media App",
-      "description": "A next-gen social platform with AI content moderation",
-      "image": "https://images.unsplash.com/photo-1510759395231-72b17d622279"
+      "title": "SudIncub",
+      "description": "Directory of startup support organizations with interactive filters",
+      "image": "https://img.notionusercontent.com/s3/prod-files-secure%2F917a6727-e8fc-4115-bfda-de72142aa4d9%2Fa7601455-cc0c-48ea-8a4e-e87c388acbec%2FSudIncub_banner.png/size/w=2000?exp=1740534821&sig=u33SKX4b46F6Cs_O7rqoLzlFJBuz5I5dXHI5y96wSVA",
+      "url": "https://jeremy-maisse.notion.site/aa815583ccde44ff8e33e58e29cf6601"
     },
     {
-      "title": "AI Chat Interface",
-      "description": "Natural language processing chat application",
-      "image": "https://images.unsplash.com/photo-1660592868727-858d28c3ba52"
+      "title": "Odience",
+      "description": "AI powered API to create marketing audiences",
+      "image": "https://ph-files.imgix.net/dae11345-0709-4184-adc0-677ffdcdb83a.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=515&fit=max&frame=1&dpr=1",
+      "url": "https://www.producthunt.com/products/odience"
     },
     {
-      "title": "Portfolio Generator",
-      "description": "Automated portfolio website generator using AI",
-      "image": "https://images.unsplash.com/photo-1685478237595-f452cb125f27"
+      "title": "Lyriks",
+      "description": "Mobile app for replying to messages with iconic audio clips from movies/music.",
+      "image": "https://media.licdn.com/dms/image/v2/D4E22AQHe9igCtBZLrg/feedshare-shrink_1280/feedshare-shrink_1280/0/1694343126349?e=1743638400&v=beta&t=EG5N9S9CvTSzOQnfiIC6U3rR4U2DnZ7fQST6Wf88uF8",
+      "url": "https://www.linkedin.com/posts/jeremy-maisse_comment-je-me-suis-fait-bannir-du-play-store-activity-7107264093622808576-Hd80/"
     },
     {
-      "title": "IoT Dashboard",
-      "description": "Smart home IoT control and monitoring system",
-      "image": "https://images.unsplash.com/photo-1679409759768-bea306439ab8"
+      "title": "Snowboard Mentor",
+      "description": "Instgram account sharing knowledge about snowboarding",
+      "image": "https://www.snowboardpascher.com/img/cms/composition-snow.gif",
+      "url": "https://www.instagram.com/snowboardmentor/"
     }
   ],
   "experiences": [
@@ -515,7 +717,7 @@ function isUUID(str) {
 
 // server/routes.ts
 async function registerRoutes(app2) {
-  const MAX_MESSAGES = 10;
+  const MAX_MESSAGES = 20;
   app2.post("/api/contact", async (req, res) => {
     try {
       const contactRequest = req.body;
@@ -633,14 +835,14 @@ async function registerRoutes(app2) {
 
 // server/index.ts
 import "dotenv/config";
-var app = express();
+var app = express2();
 if (!process.env.VERCEL) {
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express2.json());
+  app.use(express2.urlencoded({ extended: false }));
 }
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  const path3 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -649,8 +851,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (path3.startsWith("/api")) {
+      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -672,6 +874,19 @@ var serverPromise = (async () => {
     res.status(status).json({ message });
     throw err;
   });
+  if (!process.env.VERCEL) {
+    const { setupVite: setupVite2, serveStatic: serveStatic2 } = await Promise.resolve().then(() => (init_vite(), vite_exports));
+    if (app.get("env") === "development") {
+      await setupVite2(app, server);
+    } else {
+      serveStatic2(app);
+    }
+    const PORT = Number(process.env.PORT) || 5e3;
+    const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
+    server.listen(PORT, HOSTNAME, () => {
+      console.log(`serving on ${HOSTNAME}:${PORT}`);
+    });
+  }
   return app;
 })();
 async function handler(req, res) {

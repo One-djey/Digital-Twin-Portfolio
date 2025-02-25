@@ -35,36 +35,42 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       "LLM"
     ],
     "projects": [  // Use in Project page
-      {
-        "title": "E-commerce Platform",
-        "description": "A modern e-commerce solution with AI-powered recommendations",
-        "image": "https://images.unsplash.com/photo-1508873535684-277a3cbcc4e8"
-      },
-      {
-        "title": "Analytics Dashboard",
-        "description": "Real-time analytics and data visualization platform",
-        "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40"
-      },
-      {
-        "title": "Social Media App",
-        "description": "A next-gen social platform with AI content moderation",
-        "image": "https://images.unsplash.com/photo-1510759395231-72b17d622279"
-      },
-      {
-        "title": "AI Chat Interface",
-        "description": "Natural language processing chat application",
-        "image": "https://images.unsplash.com/photo-1660592868727-858d28c3ba52"
-      },
-      {
-        "title": "Portfolio Generator",
-        "description": "Automated portfolio website generator using AI",
-        "image": "https://images.unsplash.com/photo-1685478237595-f452cb125f27"
-      },
-      {
-        "title": "IoT Dashboard",
-        "description": "Smart home IoT control and monitoring system",
-        "image": "https://images.unsplash.com/photo-1679409759768-bea306439ab8"
-      }
+        {
+            "title": "Noah",
+            "description": "Rhino 3D naval plugin that calculates ship stability ",
+            "image": "https://www.rhino3d.com/images/marine-expressmarinedefault.jpg",
+            "url": null
+        },
+        {
+            "title": "Chess Verse",
+            "description": "Chess game with custom modes",
+            "image": "https://images.unsplash.com/photo-1529699211952-734e80c4d42b",
+            "url": "https://chess.jeremy-maisse.com/"
+        },
+        {
+            "title": "SudIncub",
+            "description": "Directory of startup support organizations with interactive filters",
+            "image": "https://img.notionusercontent.com/s3/prod-files-secure%2F917a6727-e8fc-4115-bfda-de72142aa4d9%2Fa7601455-cc0c-48ea-8a4e-e87c388acbec%2FSudIncub_banner.png/size/w=2000?exp=1740534821&sig=u33SKX4b46F6Cs_O7rqoLzlFJBuz5I5dXHI5y96wSVA",
+            "url": "https://jeremy-maisse.notion.site/aa815583ccde44ff8e33e58e29cf6601"
+        },
+        {
+            "title": "Odience",
+            "description": "AI powered API to create marketing audiences",
+            "image": "https://ph-files.imgix.net/dae11345-0709-4184-adc0-677ffdcdb83a.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=515&fit=max&frame=1&dpr=1",
+            "url": "https://www.producthunt.com/products/odience"
+        },
+        {
+            "title": "Lyriks",
+            "description": "Mobile app for replying to messages with iconic audio clips from movies/music.",
+            "image": "https://media.licdn.com/dms/image/v2/D4E22AQHe9igCtBZLrg/feedshare-shrink_1280/feedshare-shrink_1280/0/1694343126349?e=1743638400&v=beta&t=EG5N9S9CvTSzOQnfiIC6U3rR4U2DnZ7fQST6Wf88uF8",
+            "url": "https://www.linkedin.com/posts/jeremy-maisse_comment-je-me-suis-fait-bannir-du-play-store-activity-7107264093622808576-Hd80/"
+        },
+        {
+            "title": "Snowboard Mentor",
+            "description": "Instgram account sharing knowledge about snowboarding",
+            "image": "https://www.snowboardpascher.com/img/cms/composition-snow.gif",
+            "url": "https://www.instagram.com/snowboardmentor/"
+        }
     ],
     "experiences": [  // Use in About page
       {
