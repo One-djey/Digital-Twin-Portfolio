@@ -458,6 +458,105 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
       "logo": "https://media.licdn.com/dms/image/v2/D560BAQEyYm84FuqZyg/company-logo_200_200/company-logo_200_200/0/1733995733147/aix_marseille_universite_logo?e=1747872000&v=beta&t=FPNMoZud4fMHzFyLErsQ1Ifsa5Q4PVjKqKW8rA6B7hA",
       "year": 2015
     }
+  ],
+  "processSteps": [
+    {
+      "step": 1,
+      "title": "Discovery",
+      "description": "Analysis of your needs and objectives to define the scope of the project."
+    },
+    {
+      "step": 2,
+      "title": "Proposal",
+      "description": "Development of a custom solution with detailed planning and budget."
+    },
+    {
+      "step": 3,
+      "title": "Implementation",
+      "description": "Iterative development with regular check-ins to ensure your satisfaction."
+    }
+  ],
+  "services": [
+    {
+      "title": "AI Agent Development",
+      "icon": '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" x2="8" y1="16" y2="16"/><line x1="16" x2="16" y1="16" y2="16"/></svg>',
+      "shortDescription": "Intelligent automation solutions using the latest LLM technologies.",
+      "features": [
+        "Custom conversational agents development",
+        "LLM integration (GPT-4, Claude, etc.) into your workflows",
+        "Repetitive task automation with AI",
+        "Intelligent content analysis and generation",
+        "Business process optimization with AI"
+      ]
+    },
+    {
+      "title": "Data Pipeline Engineering",
+      "icon": '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>',
+      "shortDescription": "Data flow architecture and optimization for efficient data utilization.",
+      "features": [
+        "Design and implementation of performant ETL processes",
+        "Modern data infrastructure (data mesh, data lake)",
+        "Cross-platform data integration and transformation",
+        "Flow orchestration with Airflow, Prefect, or Dagster",
+        "Reliable and scalable data solutions"
+      ]
+    },
+    {
+      "title": "Fullstack Development",
+      "icon": '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+      "shortDescription": "Modern web applications and robust APIs tailored to your needs.",
+      "features": [
+        "Web application development with React/Next.js",
+        "RESTful and GraphQL API design",
+        "Cloud-native and serverless architecture",
+        "High-performance apps with responsive design",
+        "Integration with existing systems"
+      ]
+    }
+  ],
+  "testimonials": [
+    {
+      "name": "Arnaud P.",
+      "position": "CEO, iPepper",
+      "text": "He is a brilliant guy who has brilliantly developed his skills in the field of Data and AI. [...] A creative and highly professional guy that I recommend!"
+    },
+    {
+      "name": "Marc C.",
+      "position": "CTO, Evorra",
+      "text": "He worked on the data ingestion pipeline and insights generation and was instrumental cleansing the data, revisiting our design as we scaled, discovering interesting correlations."
+    },
+    {
+      "name": "Laurence O.",
+      "position": "Team Manager, Capgemini",
+      "text": "He demonstrated a remarkable ability to adapt, a growing curiosity on all subjects related to data and especially data science [...]. Jeremy is a professional, on whom we can rely when it comes to embarking on new challenges."
+    },
+    {
+      "name": "Philippe T.",
+      "position": "AI Engineer, Renault",
+      "text": "Passionnate, motivated and willing to provide customer with quick and high quality response."
+    }
+  ],
+  "faq": [
+    {
+      "question": "How does the collaboration process work?",
+      "answer": "After an initial discussion to understand your needs, I'll propose a tailored solution with a detailed quote. Once approved, we'll establish a timeline together, and I'll keep you regularly updated on progress with frequent demonstrations."
+    },
+    {
+      "question": "What are your pricing options?",
+      "answer": "I offer several formats depending on your needs: daily rate, project-based package, or maintenance contract. Since each project is unique, pricing is customized after analyzing your specific requirements."
+    },
+    {
+      "question": "How long does it take to complete a project?",
+      "answer": "Duration depends on your project's complexity. A simple API development might take a few weeks, while a complete application with AI could require several months. A precise estimate will be provided after our initial consultation."
+    },
+    {
+      "question": "Do you offer support after project delivery?",
+      "answer": "Absolutely! I offer maintenance and evolution contracts to ensure the longevity of your solution. You also benefit from a warranty period after production deployment."
+    },
+    {
+      "question": "Do you work on international projects?",
+      "answer": "Yes, I regularly collaborate with international clients. Thanks to modern collaborative tools and clear communication, distance is not an obstacle to your project's success."
+    }
   ]
 };
 

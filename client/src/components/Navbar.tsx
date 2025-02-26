@@ -6,7 +6,8 @@ export default function Navbar() {
 
   const navItems = [
     { href: "/", label: "Home" },
-    { href: "/projects", label: "Projects" }, // Personnaly I don't have any relevant project to show yet
+    { href: "/services", label: "Services" },
+    { href: "/projects", label: "Projects" },
     { href: "/resume", label: "Resume" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
@@ -23,7 +24,7 @@ export default function Navbar() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <nav className="flex items-center space-x-6">
+          <nav className="flex items-center space-x-4">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <a
