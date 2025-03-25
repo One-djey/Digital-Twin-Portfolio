@@ -5,6 +5,7 @@ import { insertChatMessageSchema, insertContactSchema, insertUserSchema } from '
 import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
 import { isUUID } from "@shared/uuidv4.ts";
 import Mailjet from 'node-mailjet';
+import cors from "cors";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const MAX_MESSAGES = 20;  // count both, user & assisant, messages.
@@ -206,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error sending email: " + err.message);
       res.status(500).json({ message: "Failed to send email" });
     }
-  });
+  }, cors({ origin: ["http://localhost:8080", "https://rebootamp.fr", "https://www.rebootamp.fr"] }));
 
   const httpServer = createServer(app);
   return httpServer;

@@ -620,6 +620,7 @@ function isUUID(str) {
 
 // server/routes.ts
 import Mailjet from "node-mailjet";
+import cors from "cors";
 async function registerRoutes(app2) {
   const MAX_MESSAGES = 20;
   app2.post("/api/contact", async (req, res) => {
@@ -772,7 +773,7 @@ async function registerRoutes(app2) {
       console.error("Error sending email: " + err.message);
       res.status(500).json({ message: "Failed to send email" });
     }
-  });
+  }, cors({ origin: ["http://localhost:8080", "https://rebootamp.fr", "https://www.rebootamp.fr"] }));
   const httpServer = createServer(app2);
   return httpServer;
 }
