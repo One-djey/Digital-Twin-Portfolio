@@ -619,6 +619,7 @@ function isUUID(str) {
 }
 
 // server/routes.ts
+import Mailjet from "node-mailjet";
 async function registerRoutes(app2) {
   const MAX_MESSAGES = 20;
   app2.post("/api/contact", async (req, res) => {
@@ -730,6 +731,46 @@ async function registerRoutes(app2) {
     } catch (error) {
       console.error("Error processing chat: " + error.message);
       res.status(500).json({ message: "Failed to process chat message" });
+    }
+  });
+  app2.post("/api/rebootcamp-email", async (req, res) => {
+    try {
+      const { subject, textPart } = req.body;
+      const requiredFields = { subject, textPart };
+      const missingFields = Object.entries(requiredFields).filter(([_, value]) => !value).map(([key]) => key);
+      if (missingFields.length > 0) {
+        console.error(`Missing fields: ${missingFields.join(", ")}`);
+        res.status(400).json({ message: `Missing required fields: ${missingFields.join(", ")}` });
+        return;
+      }
+      const mailjetClient = new Mailjet({
+        apiKey: process.env.MJ_API_KEY_PUBLIC,
+        apiSecret: process.env.MJ_API_KEY_PRIVATE
+      });
+      const request = mailjetClient.post("send", { version: "v3.1" }).request({
+        Messages: [
+          {
+            From: {
+              Email: "contact@rebootcamp.fr",
+              Name: "website"
+            },
+            To: [
+              {
+                Email: "roselilaval1@gmail.com",
+                Name: "Webmaster"
+              }
+            ],
+            Subject: subject,
+            TextPart: textPart,
+            HTMLPart: null
+          }
+        ]
+      });
+      const result = await request;
+      res.status(result.response.status).json({ message: "Email sent successfully", result: result.body });
+    } catch (err) {
+      console.error("Error sending email: " + err.message);
+      res.status(500).json({ message: "Failed to send email" });
     }
   });
   const httpServer = createServer(app2);

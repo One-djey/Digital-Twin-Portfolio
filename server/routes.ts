@@ -4,6 +4,7 @@ import { addUser, userExistsById, addMessage, getUserMessages, resetUserMessages
 import { insertChatMessageSchema, insertContactSchema, insertUserSchema } from '../shared/schema.ts';
 import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
 import { isUUID } from "@shared/uuidv4.ts";
+import Mailjet from 'node-mailjet';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const MAX_MESSAGES = 20;  // count both, user & assisant, messages.
@@ -157,6 +158,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error:any) {
       console.error("Error processing chat: " + error.message);
       res.status(500).json({ message: "Failed to process chat message" });
+    }
+  });
+
+  app.post("/api/rebootcamp-email", async (req, res) => {
+    try {
+      // Check missing fields
+      const { subject, textPart } = req.body;
+      const requiredFields = { subject, textPart };
+      const missingFields = Object.entries(requiredFields)
+        .filter(([_, value]) => !value)
+        .map(([key]) => key);
+      if (missingFields.length > 0) {
+        console.error(`Missing fields: ${missingFields.join(', ')}`);
+        res.status(400).json({ message: `Missing required fields: ${missingFields.join(', ')}` });
+        return;
+      }
+
+      const mailjetClient = new Mailjet({
+        apiKey: process.env.MJ_API_KEY_PUBLIC,
+        apiSecret: process.env.MJ_API_KEY_PRIVATE
+      });
+
+      const request = mailjetClient.post('send', { version: 'v3.1' }).request({
+        Messages: [
+          {
+            From: {
+              Email: 'contact@rebootcamp.fr',
+              Name: 'website',
+            },
+            To: [
+              {
+                Email: 'roselilaval1@gmail.com',
+                Name: 'Webmaster',
+              },
+            ],
+            Subject: subject,
+            TextPart: textPart,
+            HTMLPart: null,
+          },
+        ],
+      });
+
+      const result = await request;
+      res.status(result.response.status).json({ message: "Email sent successfully", result: result.body });
+    } catch (err: any) {
+      console.error("Error sending email: " + err.message);
+      res.status(500).json({ message: "Failed to send email" });
     }
   });
 
