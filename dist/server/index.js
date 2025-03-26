@@ -740,19 +740,18 @@ async function registerRoutes(app2) {
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
   };
-  app2.options("/api/rebootcamp-email", cors(corsOptions));
-  app2.post("/api/rebootcamp-email", async (req, res) => {
+  app2.use("/api/rebootcamp-email", cors(corsOptions));
+  app2.options("/api/rebootcamp-email", (req, res) => {
     res.header("Access-Control-Allow-Origin", "https://vercel.rebootcamp.fr");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.sendStatus(204);
+  });
+  app2.post("/api/rebootcamp-email", async (req, res) => {
     try {
       const { subject, textPart } = req.body;
-      const requiredFields = { subject, textPart };
-      const missingFields = Object.entries(requiredFields).filter(([_, value]) => !value).map(([key]) => key);
-      if (missingFields.length > 0) {
-        console.error(`Missing fields: ${missingFields.join(", ")}`);
-        res.status(400).json({ message: `Missing required fields: ${missingFields.join(", ")}` });
-        return;
+      if (!subject || !textPart) {
+        return res.status(400).json({ message: "Missing required fields: subject, textPart" });
       }
       const mailjetClient = new Mailjet({
         apiKey: process.env.MJ_API_KEY_PUBLIC,
@@ -761,16 +760,8 @@ async function registerRoutes(app2) {
       const request = mailjetClient.post("send", { version: "v3.1" }).request({
         Messages: [
           {
-            From: {
-              Email: "contact@rebootcamp.fr",
-              Name: "website"
-            },
-            To: [
-              {
-                Email: "roselilaval1@gmail.com",
-                Name: "Webmaster"
-              }
-            ],
+            From: { Email: "contact@rebootcamp.fr", Name: "website" },
+            To: [{ Email: "roselilaval1@gmail.com", Name: "Webmaster" }],
             Subject: subject,
             TextPart: textPart,
             HTMLPart: null
@@ -783,7 +774,7 @@ async function registerRoutes(app2) {
       console.error("Error sending email: " + err.message);
       res.status(500).json({ message: "Failed to send email" });
     }
-  }, cors());
+  });
   const httpServer = createServer(app2);
   return httpServer;
 }

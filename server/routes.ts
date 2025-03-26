@@ -163,48 +163,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const corsOptions = {
-    origin: 'https://vercel.rebootcamp.fr', 
+    origin: 'https://vercel.rebootcamp.fr',
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  };  
-  app.options('/api/rebootcamp-email', cors(corsOptions)); 
-  app.post("/api/rebootcamp-email", async (req, res) => {
-    res.header('Access-Control-Allow-Origin', 'https://vercel.rebootcamp.fr');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    credentials: true,
+  };
 
+  // Appliquer CORS uniquement sur cette route
+  app.use('/api/rebootcamp-email', cors(corsOptions));
+
+  // Gérer les requêtes preflight OPTIONS
+  app.options('/api/rebootcamp-email', (req, res) => {
+    res.header('Access-Control-Allow-Origin', 'https://vercel.rebootcamp.fr');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(204); // No Content (évite les problèmes de redirection)
+  });
+
+  app.post('/api/rebootcamp-email', async (req, res) => {
     try {
-      // Check missing fields
+      // Vérification des champs requis
       const { subject, textPart } = req.body;
-      const requiredFields = { subject, textPart };
-      const missingFields = Object.entries(requiredFields)
-        .filter(([_, value]) => !value)
-        .map(([key]) => key);
-      if (missingFields.length > 0) {
-        console.error(`Missing fields: ${missingFields.join(', ')}`);
-        res.status(400).json({ message: `Missing required fields: ${missingFields.join(', ')}` });
-        return;
+      if (!subject || !textPart) {
+        return res.status(400).json({ message: 'Missing required fields: subject, textPart' });
       }
 
       const mailjetClient = new Mailjet({
         apiKey: process.env.MJ_API_KEY_PUBLIC,
-        apiSecret: process.env.MJ_API_KEY_PRIVATE
+        apiSecret: process.env.MJ_API_KEY_PRIVATE,
       });
 
       const request = mailjetClient.post('send', { version: 'v3.1' }).request({
         Messages: [
           {
-            From: {
-              Email: 'contact@rebootcamp.fr',
-              Name: 'website',
-            },
-            To: [
-              {
-                Email: 'roselilaval1@gmail.com',
-                Name: 'Webmaster',
-              },
-            ],
+            From: { Email: 'contact@rebootcamp.fr', Name: 'website' },
+            To: [{ Email: 'roselilaval1@gmail.com', Name: 'Webmaster' }],
             Subject: subject,
             TextPart: textPart,
             HTMLPart: null,
@@ -213,13 +206,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const result = await request;
-      res.status(result.response.status).json({ message: "Email sent successfully", result: result.body });
+      res.status(result.response.status).json({ message: 'Email sent successfully', result: result.body });
     } catch (err: any) {
-      console.error("Error sending email: " + err.message);
-      res.status(500).json({ message: "Failed to send email" });
+      console.error('Error sending email: ' + err.message);
+      res.status(500).json({ message: 'Failed to send email' });
     }
-  }, cors());
+  });
 
   const httpServer = createServer(app);
-  return httpServer;
+  return httpServer;
 }
