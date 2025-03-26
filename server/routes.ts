@@ -162,8 +162,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const originAllowedList = [
+    'http://localhost:8080',
+    'https://vercel.rebootcamp.fr',
+    'http://www.rebootcamp.fr',
+    'http://rebootcamp.fr',
+    'https://www.rebootcamp.fr',
+    'https://rebootcamp.fr'
+  ];
   const corsOptions = {
-    origin: 'https://vercel.rebootcamp.fr',
+    origin: originAllowedList,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -174,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Gérer les requêtes preflight OPTIONS
   app.options('/api/rebootcamp-email', (req, res) => {
-    res.header('Access-Control-Allow-Origin', 'https://vercel.rebootcamp.fr');
+    res.header('Access-Control-Allow-Origin', originAllowedList);
     res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.sendStatus(204); // No Content (évite les problèmes de redirection)
