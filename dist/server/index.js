@@ -773,7 +773,7 @@ async function registerRoutes(app2) {
       console.error("Error sending email: " + err.message);
       res.status(500).json({ message: "Failed to send email" });
     }
-  }, cors({ origin: ["http://localhost:8080", "https://rebootamp.fr", "https://www.rebootamp.fr", "https://vercel.rebootamp.fr"] }));
+  }, cors());
   const httpServer = createServer(app2);
   return httpServer;
 }

@@ -207,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error sending email: " + err.message);
       res.status(500).json({ message: "Failed to send email" });
     }
-  }, cors({ origin: ["http://localhost:8080", "https://rebootamp.fr", "https://www.rebootamp.fr", "https://vercel.rebootamp.fr"] }));
+  }, cors());
 
   const httpServer = createServer(app);
   return httpServer;
