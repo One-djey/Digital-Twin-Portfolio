@@ -162,7 +162,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const corsOptions = {
+    origin: 'https://vercel.rebootcamp.fr', 
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  };  
+  app.options('/api/rebootcamp-email', cors(corsOptions)); 
   app.post("/api/rebootcamp-email", async (req, res) => {
+    res.header('Access-Control-Allow-Origin', 'https://vercel.rebootcamp.fr');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
     try {
       // Check missing fields
       const { subject, textPart } = req.body;

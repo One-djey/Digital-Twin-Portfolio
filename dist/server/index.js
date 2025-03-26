@@ -734,7 +734,17 @@ async function registerRoutes(app2) {
       res.status(500).json({ message: "Failed to process chat message" });
     }
   });
+  const corsOptions = {
+    origin: "https://vercel.rebootcamp.fr",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  };
+  app2.options("/api/rebootcamp-email", cors(corsOptions));
   app2.post("/api/rebootcamp-email", async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "https://vercel.rebootcamp.fr");
+    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     try {
       const { subject, textPart } = req.body;
       const requiredFields = { subject, textPart };
