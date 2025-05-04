@@ -6,7 +6,7 @@ export const portfolioData = {
     "personal": {
       "name": "Jeremy",  // Used for LLM & other
       "title": "Freelance Data / IA Engineer",  // Use in Home page
-      "avatar": "https://drive.usercontent.google.com/download?id=1APL1P1GuI38R-JVyhjJjLE6MAL9Y_ce-",  // Use in Home page
+      "avatar": "/public/profile_pic.png",  // Use in Home page
       "location": "Nice, FRANCE / Full remote",
       "email": "contact@jeremy-maisse.com",
       "phone": "+337 52 02 00 95",
@@ -36,9 +36,15 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
     ],
     "projects": [  // Use in Project page
         {
+          "title": "TraveLearn",
+          "description": "Training organization in Artificial Intelligence for all levels",
+          "image": "/public/travelearn.jpg",
+          "url": "https://travelearn.fr/"
+        },
+        {
             "title": "Noah",
             "description": "Rhino 3D naval plugin that calculates ship stability ",
-            "image": "https://www.rhino3d.com/images/marine-expressmarinedefault.jpg",
+            "image": "/public/noah.jpg",
             "url": null
         },
         {
@@ -50,25 +56,25 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
         {
             "title": "SudIncub",
             "description": "Directory of startup support organizations with interactive filters",
-            "image": "https://img.notionusercontent.com/s3/prod-files-secure%2F917a6727-e8fc-4115-bfda-de72142aa4d9%2Fa7601455-cc0c-48ea-8a4e-e87c388acbec%2FSudIncub_banner.png/size/w=2000?exp=1740534821&sig=u33SKX4b46F6Cs_O7rqoLzlFJBuz5I5dXHI5y96wSVA",
+            "image": "/public/sudincub.png",
             "url": "https://jeremy-maisse.notion.site/aa815583ccde44ff8e33e58e29cf6601"
         },
         {
             "title": "Odience",
             "description": "AI powered API to create marketing audiences",
-            "image": "https://ph-files.imgix.net/dae11345-0709-4184-adc0-677ffdcdb83a.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=515&fit=max&frame=1&dpr=1",
+            "image": "/public/odience.png",
             "url": "https://www.producthunt.com/products/odience"
         },
         {
             "title": "Lyriks",
             "description": "Mobile app for replying to messages with iconic audio clips from movies/music.",
-            "image": "https://media.licdn.com/dms/image/v2/D4E22AQHe9igCtBZLrg/feedshare-shrink_1280/feedshare-shrink_1280/0/1694343126349?e=1743638400&v=beta&t=EG5N9S9CvTSzOQnfiIC6U3rR4U2DnZ7fQST6Wf88uF8",
+            "image": "/public/lyriks.png",
             "url": "https://www.linkedin.com/posts/jeremy-maisse_comment-je-me-suis-fait-bannir-du-play-store-activity-7107264093622808576-Hd80/"
         },
         {
             "title": "Snowboard Mentor",
             "description": "Instgram account sharing knowledge about snowboarding",
-            "image": "https://www.snowboardpascher.com/img/cms/composition-snow.gif",
+            "image": "/public/snowboard_mentor.png",
             "url": "https://www.instagram.com/snowboardmentor/"
         }
     ],

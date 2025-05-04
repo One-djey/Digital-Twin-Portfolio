@@ -4,6 +4,8 @@ import { registerRoutes } from "./routes.ts";
 import 'dotenv/config';
 //import { logRequest } from '../shared/logger.ts';
 
+console.log("Starting server... Current directory:", process.cwd());
+
 const app = express();
 
 // Assurez-vous que le middleware de logging est utilisé avant les autres middlewares

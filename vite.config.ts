@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 const config = {
   plugins: [react(), runtimeErrorOverlay(), themePlugin()],
   resolve: {
@@ -20,5 +21,6 @@ const config = {
     outDir: path.resolve(__dirname, "dist/client"),
     emptyOutDir: true,
   },
+  publicDir: path.resolve(__dirname, "client/public"),
 }
 export default defineConfig(config);

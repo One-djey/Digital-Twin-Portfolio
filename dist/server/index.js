@@ -1,5 +1,202 @@
-// server/index.ts
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import path, { dirname } from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { fileURLToPath } from "url";
+var __filename, __dirname, config, vite_config_default;
+var init_vite_config = __esm({
+  "vite.config.ts"() {
+    "use strict";
+    __filename = fileURLToPath(import.meta.url);
+    __dirname = dirname(__filename);
+    config = {
+      plugins: [react(), runtimeErrorOverlay(), themePlugin()],
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "client", "src"),
+          "@shared": path.resolve(__dirname, "shared")
+        }
+      },
+      root: path.resolve(__dirname, "client"),
+      build: {
+        outDir: path.resolve(__dirname, "dist/client"),
+        emptyOutDir: true
+      },
+      publicDir: path.resolve(__dirname, "client/public")
+    };
+    vite_config_default = defineConfig(config);
+  }
+});
+
+// shared/logger.ts
+import winston from "winston";
+import "winston-daily-rotate-file";
+var Logger, logger;
+var init_logger = __esm({
+  "shared/logger.ts"() {
+    "use strict";
+    Logger = class {
+      logger;
+      constructor() {
+        const transports = [new winston.transports.Console()];
+        if (!process.env.VERCEL) {
+          transports.push(
+            new winston.transports.DailyRotateFile(
+              {
+                level: "debug",
+                filename: "logs/%DATE%.log",
+                datePattern: "YYYY-MM-DD_HH-mm",
+                //zippedArchive: true,
+                maxSize: "20m",
+                maxFiles: "14d"
+              }
+            )
+          );
+        }
+        this.logger = winston.createLogger({
+          level: "info",
+          format: winston.format.printf(({ level, message }) => {
+            return `[${level}] [${(/* @__PURE__ */ new Date()).toLocaleString()}] ${message}`;
+          }),
+          transports
+        });
+        this.overrideConsole();
+      }
+      overrideConsole() {
+        console.trace = (...args) => {
+          this.logger.debug(`TRACE: ${args.join(" ")}`);
+        };
+        console.log = (...args) => {
+          this.logger.info(args.join(" "));
+        };
+        console.warn = (...args) => {
+          this.logger.warn(args.join(" "));
+        };
+        console.error = (...args) => {
+          this.logger.error(args.join(" "));
+        };
+      }
+      log(message, source = "app") {
+        this.info(message, source);
+      }
+      debug(message, source = "app") {
+        this.logger.debug(`[${source}] ${message}`);
+      }
+      info(message, source = "app") {
+        this.logger.info(`[${source}] ${message}`);
+      }
+      warn(message, source = "app") {
+        this.logger.warn(`[${source}] ${message}`);
+      }
+      error(message, source = "app") {
+        this.logger.error(`[${source}] ${message}`);
+      }
+    };
+    logger = new Logger();
+  }
+});
+
+// server/vite.ts
+var vite_exports = {};
+__export(vite_exports, {
+  log: () => log,
+  serveStatic: () => serveStatic,
+  setupVite: () => setupVite
+});
 import express from "express";
+import fs from "fs";
+import path2, { dirname as dirname2 } from "path";
+import { fileURLToPath as fileURLToPath2 } from "url";
+import { nanoid } from "nanoid";
+async function setupVite(app2, server) {
+  log("Setting up Vite...");
+  const { createServer: createServer2 } = await import("vite");
+  const serverOptions = {
+    middlewareMode: true,
+    hmr: { server },
+    allowedHosts: true
+  };
+  const vite = await createServer2({
+    ...vite_config_default,
+    configFile: false,
+    customLogger: {
+      info: (msg) => logger.info(msg),
+      warn: (msg) => logger.warn(msg),
+      error: (msg, options) => {
+        logger.error(msg, options);
+        process.exit(1);
+      },
+      warnOnce: () => {
+      },
+      clearScreen: () => {
+      },
+      hasErrorLogged: () => false,
+      hasWarned: false
+    },
+    server: serverOptions,
+    appType: "custom"
+  });
+  app2.use(vite.middlewares);
+  app2.use("*", async (req, res, next) => {
+    const url = req.originalUrl;
+    try {
+      const clientTemplate = path2.resolve(
+        __dirname2,
+        "..",
+        "client",
+        "index.html"
+      );
+      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = template.replace(
+        `src="/src/main.tsx"`,
+        `src="/src/main.tsx?v=${nanoid()}"`
+      );
+      const page = await vite.transformIndexHtml(url, template);
+      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+    } catch (e) {
+      vite.ssrFixStacktrace(e);
+      next(e);
+    }
+  });
+}
+function serveStatic(app2) {
+  const distPath = path2.resolve(__dirname2, "..", "dist", "client");
+  if (!fs.existsSync(distPath)) {
+    throw new Error(
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
+    );
+  }
+  app2.use(express.static(distPath));
+  app2.use("*", (_req, res) => {
+    res.sendFile(path2.resolve(distPath, "index.html"));
+  });
+}
+var __filename2, __dirname2, log;
+var init_vite = __esm({
+  "server/vite.ts"() {
+    "use strict";
+    init_vite_config();
+    init_logger();
+    __filename2 = fileURLToPath2(import.meta.url);
+    __dirname2 = dirname2(__filename2);
+    log = (message, source = "express") => logger.info(message, source);
+  }
+});
+
+// server/index.ts
+import express2 from "express";
 
 // server/routes.ts
 import { createServer } from "http";
@@ -227,7 +424,7 @@ var portfolioData = {
     // Used for LLM & other
     "title": "Freelance Data / IA Engineer",
     // Use in Home page
-    "avatar": "https://media.licdn.com/dms/image/v2/D4D03AQHb7UR8SvGc-Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1678795828713?e=1744848000&v=beta&t=GztAvIY1yqiAoJx1AKWlfHv-ognqxU9_mFM9OdtcZ1s",
+    "avatar": "/public/profile_pic.png",
     // Use in Home page
     "location": "Nice, FRANCE / Full remote",
     "email": "contact@jeremy-maisse.com",
@@ -268,9 +465,15 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
   "projects": [
     // Use in Project page
     {
+      "title": "TraveLearn",
+      "description": "Training organization in Artificial Intelligence for all levels",
+      "image": "/public/travelearn.jpg",
+      "url": "https://travelearn.fr/"
+    },
+    {
       "title": "Noah",
       "description": "Rhino 3D naval plugin that calculates ship stability ",
-      "image": "https://www.rhino3d.com/images/marine-expressmarinedefault.jpg",
+      "image": "/public/noah.jpg",
       "url": null
     },
     {
@@ -282,25 +485,25 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "SudIncub",
       "description": "Directory of startup support organizations with interactive filters",
-      "image": "https://img.notionusercontent.com/s3/prod-files-secure%2F917a6727-e8fc-4115-bfda-de72142aa4d9%2Fa7601455-cc0c-48ea-8a4e-e87c388acbec%2FSudIncub_banner.png/size/w=2000?exp=1740534821&sig=u33SKX4b46F6Cs_O7rqoLzlFJBuz5I5dXHI5y96wSVA",
+      "image": "/public/sudincub.png",
       "url": "https://jeremy-maisse.notion.site/aa815583ccde44ff8e33e58e29cf6601"
     },
     {
       "title": "Odience",
       "description": "AI powered API to create marketing audiences",
-      "image": "https://ph-files.imgix.net/dae11345-0709-4184-adc0-677ffdcdb83a.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=515&fit=max&frame=1&dpr=1",
+      "image": "/public/odience.png",
       "url": "https://www.producthunt.com/products/odience"
     },
     {
       "title": "Lyriks",
       "description": "Mobile app for replying to messages with iconic audio clips from movies/music.",
-      "image": "https://media.licdn.com/dms/image/v2/D4E22AQHe9igCtBZLrg/feedshare-shrink_1280/feedshare-shrink_1280/0/1694343126349?e=1743638400&v=beta&t=EG5N9S9CvTSzOQnfiIC6U3rR4U2DnZ7fQST6Wf88uF8",
+      "image": "/public/lyriks.png",
       "url": "https://www.linkedin.com/posts/jeremy-maisse_comment-je-me-suis-fait-bannir-du-play-store-activity-7107264093622808576-Hd80/"
     },
     {
       "title": "Snowboard Mentor",
       "description": "Instgram account sharing knowledge about snowboarding",
-      "image": "https://www.snowboardpascher.com/img/cms/composition-snow.gif",
+      "image": "/public/snowboard_mentor.png",
       "url": "https://www.instagram.com/snowboardmentor/"
     }
   ],
@@ -622,181 +825,191 @@ function isUUID(str) {
 import Mailjet from "node-mailjet";
 import cors from "cors";
 async function registerRoutes(app2) {
-  const MAX_MESSAGES = 20;
-  app2.post("/api/contact", async (req, res) => {
-    try {
-      const contactRequest = req.body;
-      const receivedUser = contactRequest.user;
-      const receivedContact = contactRequest.contact;
-      const userResult = insertUserSchema.safeParse(receivedUser);
-      if (!receivedUser || !userResult.success) {
-        console.error(`Invalid user format: ${JSON.stringify(receivedUser)}`);
-        res.status(400).json({ message: "Invalid user format" });
-        return;
-      }
-      const contactResult = insertContactSchema.safeParse(receivedContact);
-      if (!receivedContact || !contactResult.success) {
-        console.error(`Invalid user format: ${JSON.stringify(receivedContact)}`);
-        res.status(400).json({ message: "Invalid contact format" });
-        return;
-      }
-      if (!await userExistsById(userResult.data.id)) {
-        const newUser = await addUser(userResult.data.id, userResult.data.name, userResult.data.email);
-        if (!newUser) {
-          console.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
-          res.status(500).json({ message: "Failed to add user." });
+  try {
+    const MAX_MESSAGES = 20;
+    app2.post("/api/contact", async (req, res) => {
+      try {
+        const contactRequest = req.body;
+        const receivedUser = contactRequest.user;
+        const receivedContact = contactRequest.contact;
+        const userResult = insertUserSchema.safeParse(receivedUser);
+        if (!receivedUser || !userResult.success) {
+          console.error(`Invalid user format: ${JSON.stringify(receivedUser)}`);
+          res.status(400).json({ message: "Invalid user format" });
           return;
         }
-      } else {
-        await updateUser(userResult.data.id, userResult.data?.name, userResult.data?.email);
-      }
-      const newContact = await addContactMessage(contactResult.data.userId, contactResult.data.message);
-      if (!newContact) {
-        console.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
-        res.status(500).json({ message: "Failed to add contact message." });
-        return;
-      }
-      console.info(`New contact form saved!`);
-      res.status(201).json({});
-    } catch (error) {
-      console.error("Error adding user: " + error.message);
-      res.status(500).json({ message: "Failed to add user" });
-    }
-  });
-  app2.post("/api/chat/reset", async (req, res) => {
-    try {
-      const user_id = req.body?.user_id;
-      if (!user_id || !await userExistsById(user_id)) {
-        console.error(`User ID ${user_id} not found.`);
-        res.status(400).json({ message: "Invalid User ID" });
-        return;
-      }
-      await resetUserMessages(user_id);
-      const messages = await getUserMessages(user_id);
-      res.status(205).json(messages);
-    } catch (error) {
-      console.error("Error resetting messages: " + error.message);
-      res.status(500).json({ message: "Failed to reset messages" });
-    }
-  });
-  app2.get("/api/chat", async (req, res) => {
-    try {
-      const user_id = req.query?.user_id;
-      if (!user_id || typeof user_id != "string") {
-        console.error(`Invalid user ID ${user_id} format.`);
-        res.status(400).json({ message: "Invalid User ID format" });
-        return;
-      }
-      if (!await userExistsById(user_id)) {
-        console.warn(`User ID ${user_id} not found, return empty message list`);
-        res.status(204).json([]);
-        return;
-      }
-      const messages = await getUserMessages(user_id);
-      res.status(200).json(messages);
-    } catch (error) {
-      console.error("Error fetching messages: " + error.message);
-      res.status(500).json({ message: "Failed to fetch messages" });
-    }
-  });
-  app2.post("/api/chat", async (req, res) => {
-    try {
-      const user_id = req.body?.user_id;
-      if (!user_id || !isUUID(user_id)) {
-        console.error(`User ID ${user_id}.`);
-        res.status(400).json({ message: "Invalid user ID" });
-        return;
-      }
-      const requestChatMessage = req.body?.message;
-      const result = insertChatMessageSchema.safeParse(requestChatMessage);
-      if (!requestChatMessage || !result.success) {
-        console.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`);
-        res.status(400).json({ message: "Invalid message format" });
-        return;
-      }
-      if (!await userExistsById(user_id)) {
-        await addUser(user_id);
-      }
-      await addMessage(user_id, "user", result.data.content);
-      const messages = await getUserMessages(user_id);
-      if (messages.length >= MAX_MESSAGES) {
-        console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
-        res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
-        return;
-      }
-      const aiResponse = await digitalTwinAgent.getResponse(messages);
-      await addMessage(user_id, "assistant", aiResponse);
-      const allMessages = await getUserMessages(user_id);
-      allMessages.forEach((msg) => console.info(`[chat] ${msg.role}: ${msg.content}`));
-      res.status(201).json(allMessages);
-    } catch (error) {
-      console.error("Error processing chat: " + error.message);
-      res.status(500).json({ message: "Failed to process chat message" });
-    }
-  });
-  const originAllowedList = [
-    "http://localhost:8080",
-    "https://vercel.rebootcamp.fr",
-    "http://www.rebootcamp.fr",
-    "http://rebootcamp.fr",
-    "https://www.rebootcamp.fr",
-    "https://rebootcamp.fr"
-  ];
-  const corsOptions = {
-    origin: originAllowedList,
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-  };
-  app2.use("/api/rebootcamp-email", cors(corsOptions));
-  app2.options("/api/rebootcamp-email", (req, res) => {
-    res.header("Access-Control-Allow-Origin", originAllowedList);
-    res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.sendStatus(204);
-  });
-  app2.post("/api/rebootcamp-email", async (req, res) => {
-    try {
-      const { subject, textPart } = req.body;
-      if (!subject || !textPart) {
-        return res.status(400).json({ message: "Missing required fields: subject, textPart" });
-      }
-      const mailjetClient = new Mailjet({
-        apiKey: process.env.MJ_API_KEY_PUBLIC,
-        apiSecret: process.env.MJ_API_KEY_PRIVATE
-      });
-      const request = mailjetClient.post("send", { version: "v3.1" }).request({
-        Messages: [
-          {
-            From: { Email: "contact@rebootcamp.fr", Name: "website" },
-            To: [{ Email: "roselilaval1@gmail.com", Name: "Webmaster" }],
-            Subject: subject,
-            TextPart: textPart,
-            HTMLPart: null
+        const contactResult = insertContactSchema.safeParse(receivedContact);
+        if (!receivedContact || !contactResult.success) {
+          console.error(`Invalid user format: ${JSON.stringify(receivedContact)}`);
+          res.status(400).json({ message: "Invalid contact format" });
+          return;
+        }
+        if (!await userExistsById(userResult.data.id)) {
+          const newUser = await addUser(userResult.data.id, userResult.data.name, userResult.data.email);
+          if (!newUser) {
+            console.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
+            res.status(500).json({ message: "Failed to add user." });
+            return;
           }
-        ]
-      });
-      const result = await request;
-      res.status(result.response.status).json({ message: "Email sent successfully", result: result.body });
-    } catch (err) {
-      console.error("Error sending email: " + err.message);
-      res.status(500).json({ message: "Failed to send email" });
-    }
-  });
-  const httpServer = createServer(app2);
-  return httpServer;
+        } else {
+          await updateUser(userResult.data.id, userResult.data?.name, userResult.data?.email);
+        }
+        const newContact = await addContactMessage(contactResult.data.userId, contactResult.data.message);
+        if (!newContact) {
+          console.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
+          res.status(500).json({ message: "Failed to add contact message." });
+          return;
+        }
+        console.info(`New contact form saved!`);
+        res.status(201).json({});
+      } catch (error) {
+        console.error("Error adding user: " + error.message);
+        res.status(500).json({ message: "Failed to add user" });
+      }
+    });
+    app2.post("/api/chat/reset", async (req, res) => {
+      try {
+        const user_id = req.body?.user_id;
+        if (!user_id || !await userExistsById(user_id)) {
+          console.error(`User ID ${user_id} not found.`);
+          res.status(400).json({ message: "Invalid User ID" });
+          return;
+        }
+        await resetUserMessages(user_id);
+        const messages = await getUserMessages(user_id);
+        res.status(205).json(messages);
+      } catch (error) {
+        console.error("Error resetting messages: " + error.message);
+        res.status(500).json({ message: "Failed to reset messages" });
+      }
+    });
+    app2.get("/api/chat", async (req, res) => {
+      try {
+        const user_id = req.query?.user_id;
+        if (!user_id || typeof user_id != "string") {
+          console.error(`Invalid user ID ${user_id} format.`);
+          res.status(400).json({ message: "Invalid User ID format" });
+          return;
+        }
+        if (!await userExistsById(user_id)) {
+          console.warn(`User ID ${user_id} not found, return empty message list`);
+          res.status(204).json([]);
+          return;
+        }
+        const messages = await getUserMessages(user_id);
+        res.status(200).json(messages);
+      } catch (error) {
+        console.error("Error fetching messages: " + error.message);
+        res.status(500).json({ message: "Failed to fetch messages" });
+      }
+    });
+    app2.post("/api/chat", async (req, res) => {
+      try {
+        const user_id = req.body?.user_id;
+        if (!user_id || !isUUID(user_id)) {
+          console.error(`User ID ${user_id}.`);
+          res.status(400).json({ message: "Invalid user ID" });
+          return;
+        }
+        const requestChatMessage = req.body?.message;
+        const result = insertChatMessageSchema.safeParse(requestChatMessage);
+        if (!requestChatMessage || !result.success) {
+          console.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`);
+          res.status(400).json({ message: "Invalid message format" });
+          return;
+        }
+        if (!await userExistsById(user_id)) {
+          await addUser(user_id);
+        }
+        await addMessage(user_id, "user", result.data.content);
+        const messages = await getUserMessages(user_id);
+        if (messages.length >= MAX_MESSAGES) {
+          console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
+          res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
+          return;
+        }
+        const aiResponse = await digitalTwinAgent.getResponse(messages);
+        await addMessage(user_id, "assistant", aiResponse);
+        const allMessages = await getUserMessages(user_id);
+        allMessages.forEach((msg) => console.info(`[chat] ${msg.role}: ${msg.content}`));
+        res.status(201).json(allMessages);
+      } catch (error) {
+        console.error("Error processing chat: " + error.message);
+        res.status(500).json({ message: "Failed to process chat message" });
+      }
+    });
+    const originAllowedList = [
+      "http://localhost:8080",
+      "https://vercel.rebootcamp.fr",
+      "http://www.rebootcamp.fr",
+      "http://rebootcamp.fr",
+      "https://www.rebootcamp.fr",
+      "https://rebootcamp.fr"
+    ];
+    const corsOptions = {
+      origin: originAllowedList,
+      methods: ["GET", "POST"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true
+    };
+    app2.use("/api/rebootcamp-email", cors(corsOptions));
+    app2.options("/api/rebootcamp-email", (req, res) => {
+      res.header("Access-Control-Allow-Origin", originAllowedList);
+      res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.sendStatus(204);
+    });
+    app2.post("/api/rebootcamp-email", async (req, res) => {
+      try {
+        const { subject, textPart } = req.body;
+        if (!subject || !textPart) {
+          return res.status(400).json({ message: "Missing required fields: subject, textPart" });
+        }
+        const mailjetClient = new Mailjet({
+          apiKey: process.env.MJ_API_KEY_PUBLIC,
+          apiSecret: process.env.MJ_API_KEY_PRIVATE
+        });
+        const request = mailjetClient.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: { Email: "contact@rebootcamp.fr", Name: "website" },
+              To: [{ Email: "roselilaval1@gmail.com", Name: "Webmaster" }],
+              Subject: subject,
+              TextPart: textPart,
+              HTMLPart: null
+            }
+          ]
+        });
+        const result = await request;
+        res.status(result.response.status).json({ message: "Email sent successfully", result: result.body });
+      } catch (err) {
+        console.error("Error sending email: " + err.message);
+        res.status(500).json({ message: "Failed to send email" });
+      }
+    });
+    const httpServer = createServer(app2);
+    return httpServer;
+  } catch (error) {
+    console.error("Fatal error in registerRoutes:", error);
+    const httpServer = createServer(app2);
+    app2.use("*", (req, res) => {
+      res.status(500).send("Server initialization error");
+    });
+    return httpServer;
+  }
 }
 
 // server/index.ts
 import "dotenv/config";
-var app = express();
+console.log("Starting server... Current directory:", process.cwd());
+var app = express2();
 if (!process.env.VERCEL) {
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express2.json());
+  app.use(express2.urlencoded({ extended: false }));
 }
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
+  const path3 = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -805,8 +1018,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+    if (path3.startsWith("/api")) {
+      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -828,6 +1041,19 @@ var serverPromise = (async () => {
     res.status(status).json({ message });
     throw err;
   });
+  if (!process.env.VERCEL) {
+    const { setupVite: setupVite2, serveStatic: serveStatic2 } = await Promise.resolve().then(() => (init_vite(), vite_exports));
+    if (app.get("env") === "development") {
+      await setupVite2(app, server);
+    } else {
+      serveStatic2(app);
+    }
+    const PORT = Number(process.env.PORT) || 5e3;
+    const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
+    server.listen(PORT, HOSTNAME, () => {
+      console.log(`serving on ${HOSTNAME}:${PORT}`);
+    });
+  }
   return app;
 })();
 async function handler(req, res) {
