@@ -1,202 +1,5 @@
-var __defProp = Object.defineProperty;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
-};
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-
-// vite.config.ts
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
-import path, { dirname } from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
-import { fileURLToPath } from "url";
-var __filename, __dirname, config, vite_config_default;
-var init_vite_config = __esm({
-  "vite.config.ts"() {
-    "use strict";
-    __filename = fileURLToPath(import.meta.url);
-    __dirname = dirname(__filename);
-    config = {
-      plugins: [react(), runtimeErrorOverlay(), themePlugin()],
-      resolve: {
-        alias: {
-          "@": path.resolve(__dirname, "client", "src"),
-          "@shared": path.resolve(__dirname, "shared")
-        }
-      },
-      root: path.resolve(__dirname, "client"),
-      build: {
-        outDir: path.resolve(__dirname, "dist/client"),
-        emptyOutDir: true
-      },
-      publicDir: path.resolve(__dirname, "client/public")
-    };
-    vite_config_default = defineConfig(config);
-  }
-});
-
-// shared/logger.ts
-import winston from "winston";
-import "winston-daily-rotate-file";
-var Logger, logger;
-var init_logger = __esm({
-  "shared/logger.ts"() {
-    "use strict";
-    Logger = class {
-      logger;
-      constructor() {
-        const transports = [new winston.transports.Console()];
-        if (!process.env.VERCEL) {
-          transports.push(
-            new winston.transports.DailyRotateFile(
-              {
-                level: "debug",
-                filename: "logs/%DATE%.log",
-                datePattern: "YYYY-MM-DD_HH-mm",
-                //zippedArchive: true,
-                maxSize: "20m",
-                maxFiles: "14d"
-              }
-            )
-          );
-        }
-        this.logger = winston.createLogger({
-          level: "info",
-          format: winston.format.printf(({ level, message }) => {
-            return `[${level}] [${(/* @__PURE__ */ new Date()).toLocaleString()}] ${message}`;
-          }),
-          transports
-        });
-        this.overrideConsole();
-      }
-      overrideConsole() {
-        console.trace = (...args) => {
-          this.logger.debug(`TRACE: ${args.join(" ")}`);
-        };
-        console.log = (...args) => {
-          this.logger.info(args.join(" "));
-        };
-        console.warn = (...args) => {
-          this.logger.warn(args.join(" "));
-        };
-        console.error = (...args) => {
-          this.logger.error(args.join(" "));
-        };
-      }
-      log(message, source = "app") {
-        this.info(message, source);
-      }
-      debug(message, source = "app") {
-        this.logger.debug(`[${source}] ${message}`);
-      }
-      info(message, source = "app") {
-        this.logger.info(`[${source}] ${message}`);
-      }
-      warn(message, source = "app") {
-        this.logger.warn(`[${source}] ${message}`);
-      }
-      error(message, source = "app") {
-        this.logger.error(`[${source}] ${message}`);
-      }
-    };
-    logger = new Logger();
-  }
-});
-
-// server/vite.ts
-var vite_exports = {};
-__export(vite_exports, {
-  log: () => log,
-  serveStatic: () => serveStatic,
-  setupVite: () => setupVite
-});
-import express from "express";
-import fs from "fs";
-import path2, { dirname as dirname2 } from "path";
-import { fileURLToPath as fileURLToPath2 } from "url";
-import { nanoid } from "nanoid";
-async function setupVite(app2, server) {
-  log("Setting up Vite...");
-  const { createServer: createServer2 } = await import("vite");
-  const serverOptions = {
-    middlewareMode: true,
-    hmr: { server },
-    allowedHosts: true
-  };
-  const vite = await createServer2({
-    ...vite_config_default,
-    configFile: false,
-    customLogger: {
-      info: (msg) => logger.info(msg),
-      warn: (msg) => logger.warn(msg),
-      error: (msg, options) => {
-        logger.error(msg, options);
-        process.exit(1);
-      },
-      warnOnce: () => {
-      },
-      clearScreen: () => {
-      },
-      hasErrorLogged: () => false,
-      hasWarned: false
-    },
-    server: serverOptions,
-    appType: "custom"
-  });
-  app2.use(vite.middlewares);
-  app2.use("*", async (req, res, next) => {
-    const url = req.originalUrl;
-    try {
-      const clientTemplate = path2.resolve(
-        __dirname2,
-        "..",
-        "client",
-        "index.html"
-      );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
-      template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`
-      );
-      const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
-    } catch (e) {
-      vite.ssrFixStacktrace(e);
-      next(e);
-    }
-  });
-}
-function serveStatic(app2) {
-  const distPath = path2.resolve(__dirname2, "..", "dist", "client");
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
-  }
-  app2.use(express.static(distPath));
-  app2.use("*", (_req, res) => {
-    res.sendFile(path2.resolve(distPath, "index.html"));
-  });
-}
-var __filename2, __dirname2, log;
-var init_vite = __esm({
-  "server/vite.ts"() {
-    "use strict";
-    init_vite_config();
-    init_logger();
-    __filename2 = fileURLToPath2(import.meta.url);
-    __dirname2 = dirname2(__filename2);
-    log = (message, source = "express") => logger.info(message, source);
-  }
-});
-
 // server/index.ts
-import express2 from "express";
+import express from "express";
 
 // server/routes.ts
 import { createServer } from "http";
@@ -512,7 +315,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Founder",
       "company": "Marvyn",
-      "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQF3hFEkz7QpSQ/company-logo_100_100/company-logo_100_100/0/1693917068755/sudincub_logo?e=1747872000&v=beta&t=MUpVe5Mr9dggpiRtkPFAXcJjOjTLLYlFifd337C9SX8",
+      "logo": "/public/marvyn.jpeg",
       "industry": "capital investment",
       "period": "January 2024 - December 2024",
       "description": "Marvyn is a venture capital analysis tool powered by artificial intelligence. It provides precise insights for startup evaluation. Our platform transforms how investors and venture capital firms access data, analyze investment opportunities, and make informed decisions.",
@@ -532,7 +335,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Head Data Engineer",
       "company": "Evorra",
-      "logo": "https://media.licdn.com/dms/image/v2/C4E0BAQHPbMz8jP_EFw/company-logo_200_200/company-logo_200_200/0/1630628834726/evorra_logo?e=1747872000&v=beta&t=7eZKgn1HEaYEtvsPjdP7F-c-iAtZAzgr_vgrYvURXPo",
+      "logo": "/public/evorra.jpeg",
       "industry": "e-commerce",
       "period": "April 2021 - December 2023",
       "description": "Designed and built data pipelines in Spark Python/SQL for audience analysis and online advertising. Scaled from 0 to 1 billion profiles managed daily in 2 years.",
@@ -547,7 +350,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Data Engineer",
       "company": "Orange",
-      "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQEIG5RkDRNPvg/company-logo_200_200/company-logo_200_200/0/1630485596129/orange_logo?e=1747872000&v=beta&t=nW3I-Ba-bSayfXkRI5hzgXHYOFiRv7VbXjogodmwMkY",
+      "logo": "/public/orange.jpeg",
       "industry": "telecommunications",
       "period": "January 2020 - April 2021",
       "description": "Creative Data Team (TV & web profiling): Developed new Big Data features and managed production applications. Skill Center AI Team (Customer Experience Quality): Created a system incident tracking tool linked to customer feedback.",
@@ -563,7 +366,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Data Scientist",
       "company": "Renault",
-      "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQHgav0KLpu8-g/company-logo_200_200/company-logo_200_200/0/1699449290162/renault_software_factory_logo?e=1747872000&v=beta&t=9_VhhVsswcmFo-MnmvXQxgWFilFdRlWeujCzg2Z64To",
+      "logo": "/public/renault.jpeg",
       "industry": "automotive",
       "period": "September 2019 - January 2020",
       "description": "R&D of advanced driver assistance systems for analyzing driving scenes in autonomous vehicles.",
@@ -577,7 +380,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Backend Developer (Java)",
       "company": "Renault",
-      "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQHgav0KLpu8-g/company-logo_200_200/company-logo_200_200/0/1699449290162/renault_software_factory_logo?e=1747872000&v=beta&t=9_VhhVsswcmFo-MnmvXQxgWFilFdRlWeujCzg2Z64To",
+      "logo": "/public/renault.jpeg",
       "industry": "automotive",
       "period": "May 2019 - September 2019",
       "description": "Developed a cloud service for a Bluetooth virtual car key solution.",
@@ -594,7 +397,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Backend Developer (JavaScript)",
       "company": "Orange",
-      "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQEIG5RkDRNPvg/company-logo_200_200/company-logo_200_200/0/1630485596129/orange_logo?e=1747872000&v=beta&t=nW3I-Ba-bSayfXkRI5hzgXHYOFiRv7VbXjogodmwMkY",
+      "logo": "/public/orange.jpeg",
       "industry": "telecommunications",
       "period": "November 2018 - May 2019",
       "description": "Developed a Software-Defined Network and created tools for managing Cisco network devices.",
@@ -608,7 +411,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Co-founder",
       "company": "Lycie App",
-      "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQGiiNximCPeVw/company-logo_100_100/company-logo_100_100/0/1634205001619/lycieapp_logo?e=1747872000&v=beta&t=u-GCIFHitNLyb_vDQJoe6myovWlXv9dchodK1NE5zJw",
+      "logo": "/public/lycie.jpeg",
       "industry": "automotive",
       "period": "May 2018 - January 2020",
       "description": "Lycie is the first mobile application for accident prevention, analyzing abnormal driver and road user behavior.",
@@ -626,7 +429,7 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
     {
       "title": "Backend & Test Developer Apprentice",
       "company": "Thales",
-      "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQEmnUAXTuLkJQ/company-logo_200_200/company-logo_200_200/0/1631366051478/thales_logo?e=1747872000&v=beta&t=1OASNkTeLaeGN2ChJWCn85pooUuOk6bvITjxQgn8LFE",
+      "logo": "/public/thales.jpeg",
       "industry": "defense & military",
       "period": "September 2015 - August 2018",
       "description": "Apprentice in the sonar software department: developed software and automated unit, acceptance, and UI tests.",
@@ -644,21 +447,21 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
       "degree": "Engineering Degree",
       "field": "Electronics and Industrial Computing",
       "institution": "Polytech Nice Sophia",
-      "logo": "https://media.licdn.com/dms/image/v2/C560BAQGbxDmYp9BZ5g/company-logo_200_200/company-logo_200_200/0/1630577766733/polytech_nice_sophia_logo?e=1747872000&v=beta&t=4zaomX9g6vtl9uwAIWy1zuljzH5-NXoeFId_KsU0vJQ",
+      "logo": "/public/polytech.jpeg",
       "year": 2018
     },
     {
       "degree": "MBA",
       "field": "Specialization in Business Management",
       "institution": "IAE Nice (Graduate School of Management)",
-      "logo": "https://media.licdn.com/dms/image/v2/C510BAQHBfvof7DL22w/company-logo_200_200/company-logo_200_200/0/1631365706583?e=1747872000&v=beta&t=QwRC6pEH87GMRm-v4c0YoqbIrpcYJ3Kjzqyd6wLMBzk",
+      "logo": "/public/IAE.jpeg",
       "year": 2018
     },
     {
       "degree": "Associate's Degree",
       "field": "Computer Science",
       "institution": "Aix-Marseille University",
-      "logo": "https://media.licdn.com/dms/image/v2/D560BAQEyYm84FuqZyg/company-logo_200_200/company-logo_200_200/0/1733995733147/aix_marseille_universite_logo?e=1747872000&v=beta&t=FPNMoZud4fMHzFyLErsQ1Ifsa5Q4PVjKqKW8rA6B7hA",
+      "logo": "/public/amU.jpeg",
       "year": 2015
     }
   ],
@@ -1002,14 +805,14 @@ async function registerRoutes(app2) {
 // server/index.ts
 import "dotenv/config";
 console.log("Starting server... Current directory:", process.cwd());
-var app = express2();
+var app = express();
 if (!process.env.VERCEL) {
-  app.use(express2.json());
-  app.use(express2.urlencoded({ extended: false }));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
 }
 app.use((req, res, next) => {
   const start = Date.now();
-  const path3 = req.path;
+  const path = req.path;
   let capturedJsonResponse = void 0;
   const originalResJson = res.json;
   res.json = function(bodyJson, ...args) {
@@ -1018,8 +821,8 @@ app.use((req, res, next) => {
   };
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path3.startsWith("/api")) {
-      let logLine = `${req.method} ${path3} ${res.statusCode} in ${duration}ms`;
+    if (path.startsWith("/api")) {
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
@@ -1041,19 +844,6 @@ var serverPromise = (async () => {
     res.status(status).json({ message });
     throw err;
   });
-  if (!process.env.VERCEL) {
-    const { setupVite: setupVite2, serveStatic: serveStatic2 } = await Promise.resolve().then(() => (init_vite(), vite_exports));
-    if (app.get("env") === "development") {
-      await setupVite2(app, server);
-    } else {
-      serveStatic2(app);
-    }
-    const PORT = Number(process.env.PORT) || 5e3;
-    const HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
-    server.listen(PORT, HOSTNAME, () => {
-      console.log(`serving on ${HOSTNAME}:${PORT}`);
-    });
-  }
   return app;
 })();
 async function handler(req, res) {

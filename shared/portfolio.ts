@@ -82,7 +82,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Founder",
         "company": "Marvyn",
-        "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQF3hFEkz7QpSQ/company-logo_100_100/company-logo_100_100/0/1693917068755/sudincub_logo?e=1747872000&v=beta&t=MUpVe5Mr9dggpiRtkPFAXcJjOjTLLYlFifd337C9SX8",
+        "logo": "/public/marvyn.jpeg",
         "industry": "capital investment",
         "period": "January 2024 - December 2024",
         "description": "Marvyn is a venture capital analysis tool powered by artificial intelligence. It provides precise insights for startup evaluation. Our platform transforms how investors and venture capital firms access data, analyze investment opportunities, and make informed decisions.",
@@ -102,7 +102,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Head Data Engineer",
         "company": "Evorra",
-        "logo": "https://media.licdn.com/dms/image/v2/C4E0BAQHPbMz8jP_EFw/company-logo_200_200/company-logo_200_200/0/1630628834726/evorra_logo?e=1747872000&v=beta&t=7eZKgn1HEaYEtvsPjdP7F-c-iAtZAzgr_vgrYvURXPo",
+        "logo": "/public/evorra.jpeg",
         "industry": "e-commerce",
         "period": "April 2021 - December 2023",
         "description": "Designed and built data pipelines in Spark Python/SQL for audience analysis and online advertising. Scaled from 0 to 1 billion profiles managed daily in 2 years.",
@@ -117,7 +117,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Data Engineer",
         "company": "Orange",
-        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQEIG5RkDRNPvg/company-logo_200_200/company-logo_200_200/0/1630485596129/orange_logo?e=1747872000&v=beta&t=nW3I-Ba-bSayfXkRI5hzgXHYOFiRv7VbXjogodmwMkY",
+        "logo": "/public/orange.jpeg",
         "industry": "telecommunications",
         "period": "January 2020 - April 2021",
         "description": "Creative Data Team (TV & web profiling): Developed new Big Data features and managed production applications. Skill Center AI Team (Customer Experience Quality): Created a system incident tracking tool linked to customer feedback.",
@@ -133,7 +133,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Data Scientist",
         "company": "Renault",
-        "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQHgav0KLpu8-g/company-logo_200_200/company-logo_200_200/0/1699449290162/renault_software_factory_logo?e=1747872000&v=beta&t=9_VhhVsswcmFo-MnmvXQxgWFilFdRlWeujCzg2Z64To",
+        "logo": "/public/renault.jpeg",
         "industry": "automotive",
         "period": "September 2019 - January 2020",
         "description": "R&D of advanced driver assistance systems for analyzing driving scenes in autonomous vehicles.",
@@ -147,7 +147,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Backend Developer (Java)",
         "company": "Renault",
-        "logo": "https://media.licdn.com/dms/image/v2/D4E0BAQHgav0KLpu8-g/company-logo_200_200/company-logo_200_200/0/1699449290162/renault_software_factory_logo?e=1747872000&v=beta&t=9_VhhVsswcmFo-MnmvXQxgWFilFdRlWeujCzg2Z64To",
+        "logo": "/public/renault.jpeg",
         "industry": "automotive",
         "period": "May 2019 - September 2019",
         "description": "Developed a cloud service for a Bluetooth virtual car key solution.",
@@ -164,7 +164,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Backend Developer (JavaScript)",
         "company": "Orange",
-        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQEIG5RkDRNPvg/company-logo_200_200/company-logo_200_200/0/1630485596129/orange_logo?e=1747872000&v=beta&t=nW3I-Ba-bSayfXkRI5hzgXHYOFiRv7VbXjogodmwMkY",
+        "logo": "/public/orange.jpeg",
         "industry": "telecommunications",
         "period": "November 2018 - May 2019",
         "description": "Developed a Software-Defined Network and created tools for managing Cisco network devices.",
@@ -178,7 +178,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Co-founder",
         "company": "Lycie App",
-        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQGiiNximCPeVw/company-logo_100_100/company-logo_100_100/0/1634205001619/lycieapp_logo?e=1747872000&v=beta&t=u-GCIFHitNLyb_vDQJoe6myovWlXv9dchodK1NE5zJw",
+        "logo": "/public/lycie.jpeg",
         "industry": "automotive",
         "period": "May 2018 - January 2020",
         "description": "Lycie is the first mobile application for accident prevention, analyzing abnormal driver and road user behavior.",
@@ -196,7 +196,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       {
         "title": "Backend & Test Developer Apprentice",
         "company": "Thales",
-        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQEmnUAXTuLkJQ/company-logo_200_200/company-logo_200_200/0/1631366051478/thales_logo?e=1747872000&v=beta&t=1OASNkTeLaeGN2ChJWCn85pooUuOk6bvITjxQgn8LFE",
+        "logo": "/public/thales.jpeg",
         "industry": "defense & military",
         "period": "September 2015 - August 2018",
         "description": "Apprentice in the sonar software department: developed software and automated unit, acceptance, and UI tests.",
@@ -213,21 +213,21 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
         "degree": "Engineering Degree",
         "field": "Electronics and Industrial Computing",
         "institution": "Polytech Nice Sophia",
-        "logo": "https://media.licdn.com/dms/image/v2/C560BAQGbxDmYp9BZ5g/company-logo_200_200/company-logo_200_200/0/1630577766733/polytech_nice_sophia_logo?e=1747872000&v=beta&t=4zaomX9g6vtl9uwAIWy1zuljzH5-NXoeFId_KsU0vJQ",
+        "logo": "/public/polytech.jpeg",
         "year": 2018
       },
       {
         "degree": "MBA",
         "field": "Specialization in Business Management",
         "institution": "IAE Nice (Graduate School of Management)",
-        "logo": "https://media.licdn.com/dms/image/v2/C510BAQHBfvof7DL22w/company-logo_200_200/company-logo_200_200/0/1631365706583?e=1747872000&v=beta&t=QwRC6pEH87GMRm-v4c0YoqbIrpcYJ3Kjzqyd6wLMBzk",
+        "logo": "/public/IAE.jpeg",
         "year": 2018
       },
       {
         "degree": "Associate's Degree",
         "field": "Computer Science",
         "institution": "Aix-Marseille University",
-        "logo": "https://media.licdn.com/dms/image/v2/D560BAQEyYm84FuqZyg/company-logo_200_200/company-logo_200_200/0/1733995733147/aix_marseille_universite_logo?e=1747872000&v=beta&t=FPNMoZud4fMHzFyLErsQ1Ifsa5Q4PVjKqKW8rA6B7hA",
+        "logo": "/public/amU.jpeg",
         "year": 2015
       }
     ],
