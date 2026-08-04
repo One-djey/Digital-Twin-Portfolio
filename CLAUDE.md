@@ -10,7 +10,7 @@ A portfolio site that also serves as an AI "digital twin": a chat widget lets vi
 
 - `npm run dev` — run the backend with `tsx` (Express). Client dev server is separate.
 - `npm run dev:client` — run the Vite dev server for the client only.
-- `npm run build` — typecheck (`tsc`), build the client (`vite build` → `dist/client`), then bundle the server with esbuild (→ `dist/server/index.js`). This is what Vercel runs.
+- `npm run build` — typecheck (`tsc`), build the client (`vite build` → `dist/client`), then bundle the server with esbuild (→ `dist/server/index.js`). **Vercel does not run this** — see "Deployment: `dist/` must be committed" below.
 - `npm run start` — run the built server from `dist/server/index.js`.
 - `npm run check` — typecheck only (`tsc`, no emit).
 - `npm run db:push` — push the Drizzle schema (`shared/schema.ts`) to the database via `drizzle-kit`.
@@ -21,6 +21,21 @@ There is no test suite and no lint script configured.
 ### Known local-dev quirk
 
 Local (non-Vercel) static/dev serving is intentionally commented out in `server/index.ts` (the `setupVite`/`serveStatic`/`server.listen` block) — a known unresolved bug means the same code can't run both locally and on Vercel. To run locally, uncomment that block, but do not deploy it uncommented.
+
+### Deployment: `dist/` must be committed
+
+`vercel.json` uses the legacy `builds` config (`{ "src": "dist/server/index.js", "use": "@vercel/node" }`, etc.) instead of Vercel's standard Build Command. This means **Vercel never runs `npm run build`** — it just packages whatever `dist/server/index.js` and `dist/client/**` already exist in the git checkout (this is also why `dist/` is tracked in git instead of gitignored).
+
+**Consequence**: any change to `server/`, `client/`, or `shared/` has no effect in production until you run `npm run build` locally and commit the regenerated `dist/` alongside the source change. Pushing source changes without rebuilding `dist/` deploys "successfully" (no build error) but silently serves the old code — this bit us once: `/api/health` returned 404 in production for a full deploy cycle because `dist/` wasn't rebuilt.
+
+Workflow for any server/client change:
+
+```bash
+npm run build
+git add server/ client/ shared/ dist/   # adjust to what actually changed, but always include dist/
+git commit -m "..."
+git push origin main   # Vercel's Git integration auto-deploys on push to main
+```
 
 ## Architecture
 
