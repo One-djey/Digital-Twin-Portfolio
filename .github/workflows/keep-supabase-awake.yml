@@ -1,0 +1,30 @@
+name: Keep Supabase project awake
+
+on:
+  schedule:
+    # Toutes les 3 jours à 6h00 UTC (marge de sécurité sous les 7 jours d'inactivité de Supabase Free)
+    - cron: "0 6 */3 * *"
+  workflow_dispatch: {}
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/health
+        run: |
+          if [ -z "${{ vars.SITE_URL }}" ]; then
+            echo "::error::La variable de repo SITE_URL n'est pas définie (Settings > Secrets and variables > Actions > Variables)."
+            exit 1
+          fi
+
+          url="${{ vars.SITE_URL }}/api/health"
+          echo "Calling $url"
+
+          http_code=$(curl -s -o response.json -w "%{http_code}" "$url")
+          cat response.json
+          echo "HTTP status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "::error::Health check failed with status $http_code"
+            exit 1
+          fi
