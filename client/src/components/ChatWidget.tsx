@@ -1,4 +1,10 @@
-import { useState, useRef, useEffect, useImperativeHandle, forwardRef } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +22,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { portfolioData } from "../../../shared/portfolio.ts";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from "react-markdown";
 import { getOrCreateUserId } from "@shared/uuidv4.ts";
 
 interface ChatWidgetProps {
@@ -38,7 +44,7 @@ const ChatContent = ({
   inputRef,
   scrollAreaRef,
   isHomePage,
-  chatClass
+  chatClass,
 }: {
   messages: ChatMessage[];
   isPending: boolean;
@@ -61,7 +67,6 @@ const ChatContent = ({
   };
 
   const scrollToBottom = () => {
-    console.log("yey")
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
     }
@@ -73,7 +78,11 @@ const ChatContent = ({
 
   return (
     <div className={"flex flex-col h-full " + chatClass}>
-      <ScrollArea id="helloword" ref={scrollAreaRef}  className="flex-grow chat-scroll-area">
+      <ScrollArea
+        id="helloword"
+        ref={scrollAreaRef}
+        className="flex-grow chat-scroll-area"
+      >
         <div className="flex flex-col h-full">
           {isHomePage && (
             <div className="text-center mb-4 pt-4">
@@ -170,294 +179,310 @@ const ChatContent = ({
           </Button>
         </div>
       </form>
-    {!chatClass &&  <p className="text-center text-muted-foreground text-xs">Powered by {portfolioData.ai_clone.model}</p>}
+      {!chatClass && (
+        <p className="text-center text-muted-foreground text-xs">
+          Powered by {portfolioData.ai_clone.model}
+        </p>
+      )}
     </div>
   );
 };
 
-const ChatWidget = forwardRef(({ embedded = false, hideFrame = false, onFirstMessage }: ChatWidgetProps, ref) => {
-  const [isOpen, setIsOpen] = useState(embedded);
-  const [isFirstVisit, setIsFirstVisit] = useState(true);
-  const [location] = useLocation();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-  const isHomePage = location === "/";
+const ChatWidget = forwardRef(
+  (
+    { embedded = false, hideFrame = false, onFirstMessage }: ChatWidgetProps,
+    ref,
+  ) => {
+    const [isOpen, setIsOpen] = useState(embedded);
+    const [isFirstVisit, setIsFirstVisit] = useState(true);
+    const [location] = useLocation();
+    const inputRef = useRef<HTMLInputElement>(null);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+    const isHomePage = location === "/";
 
-  const userId = getOrCreateUserId();
+    const userId = getOrCreateUserId();
 
-  const { data: fetchedMessages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/chat", userId],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/chat?user_id=${userId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch messages");
-      }
-      return response.json();
-    },
-  });
-
-  const introMessage = {
-    role: "assistant",
-    content: portfolioData.intro.chatIntro,
-    created_at: new Date(),
-  };
-
-  const messages  = fetchedMessages.length === 0 || fetchedMessages[0].content !== introMessage.content
-  ? [introMessage, ...fetchedMessages]
-  : fetchedMessages;
-  
-  useEffect(() => {
-    if (isFirstVisit) {
-      setIsFirstVisit(false);
-    }
-  }, [isFirstVisit]);
-  
-  
-
-  const mutation = useMutation({
-    mutationFn: async (content: string) => {
-      const tempMessage: ChatMessage = {
-        role: "user",
-        content,
-        created_at: new Date(),
-      };
-      queryClient.setQueryData(["/api/chat", userId], [...messages, tempMessage]);
-
-      const response = await apiRequest("POST", "/api/chat", {
-        user_id: userId,
-        message: { role: "user", content },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-      return response.json();
-    },
-    onSuccess: (newMessages) => {
-      if (onFirstMessage && messages.length === 1) {
-        onFirstMessage();
-      }
-      queryClient.invalidateQueries({ queryKey: ["/api/chat", userId] });
-      inputRef.current?.focus();
-    },
-    onError: (error: Error) => {
-      let errorMessage = error.message
-      let errorCode = '';
-
-      // Check if the error message contains a code followed by a colon
-      const messageParts = error.message.split(':');
-      if (messageParts.length > 1) {
-        errorCode = messageParts[0].trim(); // First part is the error code
-        try {
-          const responseBody = JSON.parse(messageParts.slice(1).join(':').trim());
-          errorMessage = responseBody.message;
-        } catch (e) {
-          console.error("Failed to parse error message:", e);
+    const { data: fetchedMessages = [] } = useQuery<ChatMessage[]>({
+      queryKey: ["/api/chat", userId],
+      queryFn: async () => {
+        const response = await apiRequest("GET", `/api/chat?user_id=${userId}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch messages");
         }
-      }
-      console.error("Failed to send chat message:", errorMessage);
-      toast({
-        title: `Error ${errorCode}`,
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const resetChat = async () => {
-
-    // For dev only
-    toast({
-      title: "Warning",
-      description: "Deactivated feature",
-      variant: "destructive",
+        return response.json();
+      },
     });
-    return;
 
-    try {
-      queryClient.setQueryData<ChatMessage[]>(["/api/chat", userId], [introMessage]);
+    const introMessage = {
+      role: "assistant",
+      content: portfolioData.intro.chatIntro,
+      created_at: new Date(),
+    };
 
-      const response = await apiRequest("POST", "/api/chat/reset", {
-        user_id: userId,
-      });
-      if (!response.ok) {
-        console.error("Failed to reset chat:", response.statusText);
-        throw new Error("Failed to reset chat.");
+    const messages =
+      fetchedMessages.length === 0 ||
+      fetchedMessages[0].content !== introMessage.content
+        ? [introMessage, ...fetchedMessages]
+        : fetchedMessages;
+
+    useEffect(() => {
+      if (isFirstVisit) {
+        setIsFirstVisit(false);
       }
+    }, [isFirstVisit]);
 
-      queryClient.removeQueries({ queryKey: ["/api/chat", userId] });
-      await queryClient.prefetchQuery({
-        queryKey: ["/api/chat", userId],
-        queryFn: async () => {
-          const res = await apiRequest("GET", `/api/chat?user_id=${userId}`);
-          return res.json();
-        },
-      });
-      inputRef.current?.focus();
-    } catch (error) {
-      console.error("Error in resetChat:", error);
+    const mutation = useMutation({
+      mutationFn: async (content: string) => {
+        const tempMessage: ChatMessage = {
+          role: "user",
+          content,
+          created_at: new Date(),
+        };
+        queryClient.setQueryData(
+          ["/api/chat", userId],
+          [...messages, tempMessage],
+        );
+
+        const response = await apiRequest("POST", "/api/chat", {
+          user_id: userId,
+          message: { role: "user", content },
+        });
+        if (!response.ok) {
+          throw new Error("Failed to send message");
+        }
+        return response.json();
+      },
+      onSuccess: (newMessages) => {
+        if (onFirstMessage && messages.length === 1) {
+          onFirstMessage();
+        }
+        queryClient.invalidateQueries({ queryKey: ["/api/chat", userId] });
+        inputRef.current?.focus();
+      },
+      onError: (error: Error) => {
+        let errorMessage = error.message;
+        let errorCode = "";
+
+        // Check if the error message contains a code followed by a colon
+        const messageParts = error.message.split(":");
+        if (messageParts.length > 1) {
+          errorCode = messageParts[0].trim(); // First part is the error code
+          try {
+            const responseBody = JSON.parse(
+              messageParts.slice(1).join(":").trim(),
+            );
+            errorMessage = responseBody.message;
+          } catch (e) {
+            console.error("Failed to parse error message:", e);
+          }
+        }
+        console.error("Failed to send chat message:", errorMessage);
+        toast({
+          title: `Error ${errorCode}`,
+          description: errorMessage,
+          variant: "destructive",
+        });
+      },
+    });
+
+    const resetChat = async () => {
+      // For dev only
       toast({
-        title: "Error",
-        description: "Failed to reset chat. Please try again.",
+        title: "Warning",
+        description: "Deactivated feature",
         variant: "destructive",
       });
-    }
-  };
+      return;
 
-  const scrollToBottom = () => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  };
+      try {
+        queryClient.setQueryData<ChatMessage[]>(
+          ["/api/chat", userId],
+          [introMessage],
+        );
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollToBottom();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [messages]);
+        const response = await apiRequest("POST", "/api/chat/reset", {
+          user_id: userId,
+        });
+        if (!response.ok) {
+          console.error("Failed to reset chat:", response.statusText);
+          throw new Error("Failed to reset chat.");
+        }
 
-  useEffect(() => {
-    if (isOpen) {
-      scrollToBottom();
-    }
-  }, [isOpen]);
+        queryClient.removeQueries({ queryKey: ["/api/chat", userId] });
+        await queryClient.prefetchQuery({
+          queryKey: ["/api/chat", userId],
+          queryFn: async () => {
+            const res = await apiRequest("GET", `/api/chat?user_id=${userId}`);
+            return res.json();
+          },
+        });
+        inputRef.current?.focus();
+      } catch (error) {
+        console.error("Error in resetChat:", error);
+        toast({
+          title: "Error",
+          description: "Failed to reset chat. Please try again.",
+          variant: "destructive",
+        });
+      }
+    };
 
-  useImperativeHandle(ref, () => ({
-    resetChat,
-    scrollToBottom,
-  }));
+    const scrollToBottom = () => {
+      if (scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+      }
+    };
 
-  if (embedded) {
-    return hideFrame ? (
-      <div className="h-full">
-        <ChatContent
-          messages={messages}
-          isPending={mutation.isPending}
-          mutation={mutation}
-          inputRef={inputRef}
-          scrollAreaRef={scrollAreaRef}
-          isHomePage={isHomePage}
-        />
-      </div>
-    ) : (
-      <Card className="w-full h-full flex flex-col overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">
-            Chat with {portfolioData.personal.name}'s AI Clone
-          </h3>
-          <div className="flex gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={resetChat}>
-                  <RotateCcw className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Restart chat</p>
-              </TooltipContent>
-            </Tooltip>
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      return () => clearTimeout(timer);
+    }, [messages]);
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Close chat</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+    useEffect(() => {
+      if (isOpen) {
+        scrollToBottom();
+      }
+    }, [isOpen]);
+
+    useImperativeHandle(ref, () => ({
+      resetChat,
+      scrollToBottom,
+    }));
+
+    if (embedded) {
+      return hideFrame ? (
+        <div className="h-full">
+          <ChatContent
+            messages={messages}
+            isPending={mutation.isPending}
+            mutation={mutation}
+            inputRef={inputRef}
+            scrollAreaRef={scrollAreaRef}
+            isHomePage={isHomePage}
+          />
         </div>
-        <ChatContent
-          messages={messages}
-          isPending={mutation.isPending}
-          mutation={mutation}
-          inputRef={inputRef}
-          scrollAreaRef={scrollAreaRef}
-          isHomePage={isHomePage}
-          chatClass="pb-16"
-        />
-      </Card>
-    );
-  }
+      ) : (
+        <Card className="w-full h-full flex flex-col overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h3 className="font-semibold">
+              Chat with {portfolioData.personal.name}'s AI Clone
+            </h3>
+            <div className="flex gap-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={resetChat}>
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Restart chat</p>
+                </TooltipContent>
+              </Tooltip>
 
-  if (isHomePage) return null;
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Close chat</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+          <ChatContent
+            messages={messages}
+            isPending={mutation.isPending}
+            mutation={mutation}
+            inputRef={inputRef}
+            scrollAreaRef={scrollAreaRef}
+            isHomePage={isHomePage}
+            chatClass="pb-16"
+          />
+        </Card>
+      );
+    }
 
-  return (
-    <TooltipProvider>
-      {!isOpen && (
-        <Button
-          size="icon"
-          className="fixed bottom-4 right-4 rounded-full shadow-lg"
-          onClick={() => setIsOpen(true)}
-        >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-      )}
+    if (isHomePage) return null;
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-20 right-4 z-50"
+    return (
+      <TooltipProvider>
+        {!isOpen && (
+          <Button
+            size="icon"
+            className="fixed bottom-4 right-4 rounded-full shadow-lg"
+            onClick={() => setIsOpen(true)}
           >
-            <Card className="w-[350px] h-[500px] flex flex-col">
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="font-semibold">
-                  Chat with {portfolioData.personal.name}'s AI Clone
-                </h3>
-                <div className="flex gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" onClick={resetChat}>
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Restart chat</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Close chat</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-              <ChatContent
-                messages={messages}
-                isPending={mutation.isPending}
-                mutation={mutation}
-                inputRef={inputRef}
-                scrollAreaRef={scrollAreaRef}
-                isHomePage={isHomePage}
-                chatClass="pb-16"
-              />
-            </Card>
-          </motion.div>
+            <MessageCircle className="h-6 w-6" />
+          </Button>
         )}
-      </AnimatePresence>
-    </TooltipProvider>
-  );
-});
+
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="fixed bottom-20 right-4 z-50"
+            >
+              <Card className="w-[350px] h-[500px] flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b">
+                  <h3 className="font-semibold">
+                    Chat with {portfolioData.personal.name}'s AI Clone
+                  </h3>
+                  <div className="flex gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={resetChat}>
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Restart chat</p>
+                      </TooltipContent>
+                    </Tooltip>
+
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Close chat</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+                <ChatContent
+                  messages={messages}
+                  isPending={mutation.isPending}
+                  mutation={mutation}
+                  inputRef={inputRef}
+                  scrollAreaRef={scrollAreaRef}
+                  isHomePage={isHomePage}
+                  chatClass="pb-16"
+                />
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </TooltipProvider>
+    );
+  },
+);
 
 export default ChatWidget;
