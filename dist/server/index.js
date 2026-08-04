@@ -7,7 +7,7 @@ import { createServer } from "http";
 // server/storage.ts
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // shared/schema.ts
 import { pgTable, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
@@ -67,6 +67,15 @@ var insertUserSchema = createInsertSchema(users).pick({
 // server/storage.ts
 var client = postgres(process.env.DATABASE_URL);
 var db = drizzle({ client });
+async function checkDatabaseHealth() {
+  const start = Date.now();
+  try {
+    await db.execute(sql`select 1`);
+    return { up: true, latencyMs: Date.now() - start };
+  } catch (error) {
+    return { up: false, latencyMs: Date.now() - start, error: error.message };
+  }
+}
 async function addUser(id, name, email) {
   return await db.insert(users).values({ id, name, email }).returning();
 }
@@ -630,6 +639,26 @@ import cors from "cors";
 async function registerRoutes(app2) {
   try {
     const MAX_MESSAGES = 20;
+    app2.get("/api/health", async (req, res) => {
+      const database = await checkDatabaseHealth();
+      const aiProvider = {
+        mistral: { configured: Boolean(process.env.MISTRAL_API_KEY) },
+        openai: { configured: Boolean(process.env.OPENAI_API_KEY) }
+      };
+      const email = {
+        configured: Boolean(
+          process.env.MJ_API_KEY_PUBLIC && process.env.MJ_API_KEY_PRIVATE
+        )
+      };
+      const services = { database, aiProvider, email };
+      const isUp = database.up;
+      const status = isUp ? "ok" : "down";
+      res.status(isUp ? 200 : 503).json({
+        status,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        services
+      });
+    });
     app2.post("/api/contact", async (req, res) => {
       try {
         const contactRequest = req.body;
@@ -643,23 +672,40 @@ async function registerRoutes(app2) {
         }
         const contactResult = insertContactSchema.safeParse(receivedContact);
         if (!receivedContact || !contactResult.success) {
-          console.error(`Invalid user format: ${JSON.stringify(receivedContact)}`);
+          console.error(
+            `Invalid user format: ${JSON.stringify(receivedContact)}`
+          );
           res.status(400).json({ message: "Invalid contact format" });
           return;
         }
         if (!await userExistsById(userResult.data.id)) {
-          const newUser = await addUser(userResult.data.id, userResult.data.name, userResult.data.email);
+          const newUser = await addUser(
+            userResult.data.id,
+            userResult.data.name,
+            userResult.data.email
+          );
           if (!newUser) {
-            console.error(`Failed to add user ${JSON.stringify(userResult.data)}`);
+            console.error(
+              `Failed to add user ${JSON.stringify(userResult.data)}`
+            );
             res.status(500).json({ message: "Failed to add user." });
             return;
           }
         } else {
-          await updateUser(userResult.data.id, userResult.data?.name, userResult.data?.email);
+          await updateUser(
+            userResult.data.id,
+            userResult.data?.name,
+            userResult.data?.email
+          );
         }
-        const newContact = await addContactMessage(contactResult.data.userId, contactResult.data.message);
+        const newContact = await addContactMessage(
+          contactResult.data.userId,
+          contactResult.data.message
+        );
         if (!newContact) {
-          console.error(`Failed to add contact message ${JSON.stringify(contactResult.data)}`);
+          console.error(
+            `Failed to add contact message ${JSON.stringify(contactResult.data)}`
+          );
           res.status(500).json({ message: "Failed to add contact message." });
           return;
         }
@@ -695,7 +741,9 @@ async function registerRoutes(app2) {
           return;
         }
         if (!await userExistsById(user_id)) {
-          console.warn(`User ID ${user_id} not found, return empty message list`);
+          console.warn(
+            `User ID ${user_id} not found, return empty message list`
+          );
           res.status(204).json([]);
           return;
         }
@@ -717,7 +765,9 @@ async function registerRoutes(app2) {
         const requestChatMessage = req.body?.message;
         const result = insertChatMessageSchema.safeParse(requestChatMessage);
         if (!requestChatMessage || !result.success) {
-          console.error(`Invalid message format: ${JSON.stringify(requestChatMessage)}`);
+          console.error(
+            `Invalid message format: ${JSON.stringify(requestChatMessage)}`
+          );
           res.status(400).json({ message: "Invalid message format" });
           return;
         }
@@ -727,14 +777,18 @@ async function registerRoutes(app2) {
         await addMessage(user_id, "user", result.data.content);
         const messages = await getUserMessages(user_id);
         if (messages.length >= MAX_MESSAGES) {
-          console.error(`Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`);
+          console.error(
+            `Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`
+          );
           res.status(403).json({ message: `Messages limit reached (${MAX_MESSAGES})` });
           return;
         }
         const aiResponse = await digitalTwinAgent.getResponse(messages);
         await addMessage(user_id, "assistant", aiResponse);
         const allMessages = await getUserMessages(user_id);
-        allMessages.forEach((msg) => console.info(`[chat] ${msg.role}: ${msg.content}`));
+        allMessages.forEach(
+          (msg) => console.info(`[chat] ${msg.role}: ${msg.content}`)
+        );
         res.status(201).json(allMessages);
       } catch (error) {
         console.error("Error processing chat: " + error.message);
