@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Suppression de toute la gestion des fichiers statiques
     // Vercel s'en charge via vercel.json
 
-    const MAX_MESSAGES = 20; // count both, user & assisant, messages.
+    const MAX_MESSAGES = 50; // count both, user & assisant, messages.
 
     // Limite le nombre de requêtes IA par IP pour éviter les abus sur un
     // endpoint public qui déclenche des appels payants vers le LLM.

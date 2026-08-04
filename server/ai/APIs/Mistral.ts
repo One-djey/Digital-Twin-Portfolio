@@ -38,6 +38,12 @@ export class MistralAPI implements AiApiInterface {
     this.maxTokens = maxTokens;
   }
 
+  // Le system prompt (system + portfolioData) est identique à chaque appel :
+  // une clé de cache fixe permet à Mistral de réutiliser ce préfixe entre
+  // tous les utilisateurs plutôt que de le refacturer en entier à chaque
+  // requête. Bump la valeur si le system prompt change de structure.
+  private static readonly PROMPT_CACHE_KEY = "digital-twin-agent-v1";
+
   public async getResponse(messages: AiChatMessage[]): Promise<string> {
     try {
       const chatResponse = await this.client.chat.complete({
@@ -46,10 +52,11 @@ export class MistralAPI implements AiApiInterface {
         temperature: this.temperature,
         maxTokens: this.maxTokens,
         stream: false,
+        promptCacheKey: MistralAPI.PROMPT_CACHE_KEY,
       });
 
       return String(
-        chatResponse.choices?.[0]?.message.content ??
+        chatResponse.choices?.[0]?.message?.content ??
           "I apologize, I couldn't process that request.",
       );
     } catch (error) {
