@@ -18,9 +18,11 @@ A portfolio site that also serves as an AI "digital twin": a chat widget lets vi
 
 There is no test suite and no lint script configured.
 
-### Known local-dev quirk
+### Two server entrypoints: `server/index.ts` (Vercel) vs `server/dev.ts` (local)
 
-Local (non-Vercel) static/dev serving is intentionally commented out in `server/index.ts` (the `setupVite`/`serveStatic`/`server.listen` block) — a known unresolved bug means the same code can't run both locally and on Vercel. To run locally, uncomment that block, but do not deploy it uncommented.
+`server/index.ts` is the Vercel serverless entrypoint only — it exports a `handler(req, res)` and never calls `server.listen` or touches `server/vite.ts`. `server/dev.ts` (used by `npm run dev`) is the local-only entrypoint: it sets up Vite middleware (`setupVite`/`serveStatic`) and calls `server.listen`.
+
+They're kept separate on purpose. Previously this was one file with an `if (!process.env.VERCEL)` runtime guard around the Vite/listen code — but esbuild bundles `server/index.ts` as a single chunk (no code splitting), so a dynamic `import("./vite.ts")` still gets its _own_ static imports (`vite`, `@vitejs/plugin-react`, etc. — devDependencies) hoisted to the top of the bundled output as real ESM `import` statements, outside the runtime guard. Node then fails to resolve those devDependencies when Vercel loads the function. Splitting into two entrypoints means `server/index.ts`'s import graph never reaches `server/vite.ts`, so esbuild can't pull those packages into the Vercel bundle at all — fixed by construction, not by discipline.
 
 ### Deployment: `dist/` must be committed
 

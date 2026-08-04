@@ -952,15 +952,8 @@ async function registerRoutes(app2) {
   }
 }
 
-// server/index.ts
-import "dotenv/config";
-console.log("Starting server... Current directory:", process.cwd());
-var app = express();
-if (!process.env.VERCEL) {
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-}
-app.use((req, res, next) => {
+// server/middleware.ts
+function requestLogger(req, res, next) {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse = void 0;
@@ -983,17 +976,24 @@ app.use((req, res, next) => {
     }
   });
   next();
-});
+}
+function errorHandler(err, _req, res, _next) {
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
+  throw err;
+}
+
+// server/index.ts
+import "dotenv/config";
+console.log("Starting server... Current directory:", process.cwd());
+var app = express();
+app.use(requestLogger);
 var environment = process.env.VERCEL_ENV || process.env.NODE_ENV;
 console.log(`The application is starting in ${environment} mode...`);
 var serverPromise = (async () => {
   const server = await registerRoutes(app);
-  app.use((err, _req, res, _next) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-    throw err;
-  });
+  app.use(errorHandler);
   return app;
 })();
 async function handler(req, res) {
