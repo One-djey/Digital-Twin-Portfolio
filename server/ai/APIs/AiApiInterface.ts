@@ -1,8 +1,10 @@
-export interface AiApiInterface {
-    client: any;
-    model: string;
-    temperature: number;
-    maxTokens: number;
+import type { AiChatMessage } from "../../../shared/schema.ts";
 
-    getResponse(messages: { role: string; content: string }[]): Promise<string>;
+export interface AiApiInterface {
+  client: unknown;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+
+  getResponse(messages: AiChatMessage[]): Promise<string>;
 }

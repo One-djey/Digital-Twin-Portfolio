@@ -1,6 +1,7 @@
-import 'dotenv/config'; // Assurez-vous que dotenv est importé
-import { Mistral } from '@mistralai/mistralai';
-import { AiApiInterface } from './AiApiInterface.ts';
+import "dotenv/config"; // Assurez-vous que dotenv est importé
+import { Mistral } from "@mistralai/mistralai";
+import { AiApiInterface } from "./AiApiInterface.ts";
+import type { AiChatMessage } from "../../../shared/schema.ts";
 
 export class MistralAPI implements AiApiInterface {
   public client: Mistral;
@@ -17,7 +18,7 @@ export class MistralAPI implements AiApiInterface {
     "ministral-8b-latest",
     "ministral-3b-latest",
     "mistral-embed",
-    "mistral-moderation-latest"
+    "mistral-moderation-latest",
   ];
 
   constructor(model: string, temperature: number, maxTokens: number) {
@@ -25,14 +26,19 @@ export class MistralAPI implements AiApiInterface {
     if (!apiKey) {
       throw new Error("MISTRAL_API_KEY environment variable is required");
     }
-    
+    if (!MistralAPI.MODELS.includes(model)) {
+      throw new Error(
+        `Unsupported Mistral model "${model}". Supported models: ${MistralAPI.MODELS.join(", ")}`,
+      );
+    }
+
     this.client = new Mistral({ apiKey });
     this.model = model;
     this.temperature = temperature;
     this.maxTokens = maxTokens;
   }
 
-  public async getResponse(messages: { role: string; content: string }[]): Promise<string> {
+  public async getResponse(messages: AiChatMessage[]): Promise<string> {
     try {
       const chatResponse = await this.client.chat.complete({
         model: this.model,
@@ -41,8 +47,11 @@ export class MistralAPI implements AiApiInterface {
         maxTokens: this.maxTokens,
         stream: false,
       });
-      
-      return String(chatResponse.choices?.[0]?.message.content ?? "I apologize, I couldn't process that request.");
+
+      return String(
+        chatResponse.choices?.[0]?.message.content ??
+          "I apologize, I couldn't process that request.",
+      );
     } catch (error) {
       throw new Error(`Mistral API request failed: ${error}`);
     }

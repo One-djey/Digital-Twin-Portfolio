@@ -20,6 +20,7 @@ import { digitalTwinAgent } from "./ai/DigitalTwinAgent.ts";
 import { isUUID } from "@shared/uuidv4.ts";
 import Mailjet from "node-mailjet";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   try {
@@ -27,6 +28,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Vercel s'en charge via vercel.json
 
     const MAX_MESSAGES = 20; // count both, user & assisant, messages.
+
+    // Limite le nombre de requêtes IA par IP pour éviter les abus sur un
+    // endpoint public qui déclenche des appels payants vers le LLM.
+    const chatRateLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      limit: 10,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { message: "Too many chat requests, please try again shortly." },
+    });
+
+    const contactRateLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 5,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: {
+        message: "Too many contact requests, please try again later.",
+      },
+    });
 
     app.get("/api/health", async (req, res) => {
       const database = await checkDatabaseHealth();
@@ -53,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     });
 
-    app.post("/api/contact", async (req, res) => {
+    app.post("/api/contact", contactRateLimiter, async (req, res) => {
       try {
         const contactRequest = req.body;
         const receivedUser = contactRequest.user;
@@ -172,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    app.post("/api/chat", async (req, res) => {
+    app.post("/api/chat", chatRateLimiter, async (req, res) => {
       try {
         // Check user_id format
         const user_id: string = req.body?.user_id;
@@ -207,14 +228,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(
             `Messages limit reached (${MAX_MESSAGES}) for user ${user_id}`,
           );
-          res
-            .status(403)
-            .json({ message: `Messages limit reached (${MAX_MESSAGES})` });
+          res.status(403).json({
+            message: `You've reached the ${MAX_MESSAGES}-message limit for this conversation. Please start a new chat to continue.`,
+          });
           return;
         }
 
         // Get AI response
-        const aiResponse = await digitalTwinAgent.getResponse(messages);
+        const aiResponse = await digitalTwinAgent.getResponse(
+          messages.map((msg) => ({
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+          })),
+        );
 
         // Add AI' response
         await addMessage(user_id, "assistant", aiResponse);

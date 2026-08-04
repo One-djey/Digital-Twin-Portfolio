@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { chatMessages, contactMessages, users } from "../shared/schema.ts";
 
 const client = postgres(process.env.DATABASE_URL!);
@@ -86,7 +86,8 @@ export async function getUserMessages(userId: string) {
   return await db
     .select()
     .from(chatMessages)
-    .where(eq(chatMessages.userId, userId));
+    .where(eq(chatMessages.userId, userId))
+    .orderBy(asc(chatMessages.createdAt), asc(chatMessages.id));
 }
 
 // Supprimer les messages d'un utilisateur spécifique
