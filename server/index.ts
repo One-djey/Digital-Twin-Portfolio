@@ -1,8 +1,8 @@
+import "dotenv/config";
 import express from "express";
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { registerRoutes } from "./routes.ts";
 import { requestLogger, errorHandler } from "./middleware.ts";
-import "dotenv/config";
 
 // Vercel serverless entrypoint only. For local development, use
 // `server/dev.ts` (npm run dev) instead — see CLAUDE.md "Two server

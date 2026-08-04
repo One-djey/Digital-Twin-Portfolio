@@ -1,4 +1,5 @@
 // server/index.ts
+import "dotenv/config";
 import express from "express";
 
 // server/routes.ts
@@ -985,7 +986,6 @@ function errorHandler(err, _req, res, _next) {
 }
 
 // server/index.ts
-import "dotenv/config";
 console.log("Starting server... Current directory:", process.cwd());
 var app = express();
 app.use(requestLogger);

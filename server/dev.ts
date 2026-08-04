@@ -1,7 +1,11 @@
+import "dotenv/config";
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes.ts";
 import { requestLogger, errorHandler } from "./middleware.ts";
-import "dotenv/config";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Local-only dev entrypoint. Never referenced by the esbuild command that
 // produces dist/server/index.js, so vite/@vitejs/plugin-react (devDependencies)
@@ -14,6 +18,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(requestLogger);
+
+// Mirrors vercel.json's `/public/(.*) -> public/$1` route, which the Vite
+// dev server otherwise has no way to know about.
+app.use("/public", express.static(path.resolve(__dirname, "..", "public")));
 
 (async () => {
   const server = await registerRoutes(app);
