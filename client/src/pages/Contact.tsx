@@ -38,10 +38,10 @@ export default function Contact() {
   });
 
   async function onSubmit(data: FormData) {
-    try{
+    try {
       const user_id = getOrCreateUserId();
       const response = await apiRequest("POST", "/api/contact", {
-        user:{
+        user: {
           id: user_id,
           name: data.name,
           email: data.email,
@@ -49,7 +49,7 @@ export default function Contact() {
         contact: {
           userId: user_id,
           message: data.message,
-        }
+        },
       });
       if (!response.ok) {
         throw new Error("Failed to send contat form");
@@ -58,6 +58,11 @@ export default function Contact() {
         title: "Message sent!",
         description: `Thank you ${data.name} for your message. I'll get back to you soon!`,
       });
+
+      const subject = `Contact site web (${data.name})`;
+      const body = `${data.message}\n\n---\n${data.name} — ${data.email}`;
+      window.location.href = `mailto:contact@jeremy-maisse.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
       form.reset();
     } catch (error) {
       toast({
@@ -81,7 +86,10 @@ export default function Contact() {
         <Card>
           <CardContent className="pt-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 <FormField
                   control={form.control}
                   name="name"
