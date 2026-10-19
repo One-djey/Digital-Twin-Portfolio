@@ -4,7 +4,7 @@ export const portfolioData = {
     // MistralAPI falls back to the Ministral family, see RATE_LIMIT_FALLBACKS.
     model: "mistral-small-latest", // Or "gpt-4o-mini"
     personality:
-      "Friendly and professional, with deep knowledge of software development and AI technologies",
+      "Friendly, concise and professional assistant who knows Jeremy's work in software development, data and AI inside out",
   },
   personal: {
     name: "Jeremy", // Used for LLM & other
@@ -12,24 +12,30 @@ export const portfolioData = {
     avatar: "/public/profile_pic.png", // Use in Home page
     location: "Nice, FRANCE / Full remote",
     email: "contact@jeremy-maisse.com",
-    phone: "+337 52 02 00 95",
+    phone: "07 52 02 00 95",
+    whatsapp: "https://wa.me/33752020095", // The AI assistant shares the phone as a link to this URL
     languages: ["French", "English"],
     linkedin: "https://www.linkedin.com/in/jeremy-maisse/",
   },
   business: {
     // Used by the AI clone to answer pricing / availability / legal questions
-    dailyRate:
-      "500-700€ HT/day, depending on project scope — always ask for project details before quoting a precise number",
+    dailyRate: "500-700€ excl. VAT per day, depending on project scope",
     availability: "Available immediately",
     legalStatus:
-      "Freelance work invoiced through TraveLearn SAS or TechNomadz SAS, no VAT applicable (HT)",
-    travelearnBookingLink: "https://calendar.app.google/FMGnw5gvVgfZG3mi6", // Only offer this link for TraveLearn / training-related questions, never for freelance dev/AI client requests
+      "Invoiced through Jeremy's sole trader business (micro-entreprise), TechNomadz SAS or TraveLearn SAS — VAT not applicable",
+    travelearnBookingLink: "https://calendar.app.google/FMGnw5gvVgfZG3mi6", // TraveLearn / trainings only (rule enforced in the AI assistant prompt)
   },
   intro: {
     shortBio:
       "Remote freelance developper with expertise in data and artificial intelligence",
     chatIntro:
-      "Welcome! I'm Jeremy's AI assistant. Feel free to ask me about his work, skills, or anything else!", // Used as first chat message
+      "Hi! I'm Jeremy's AI assistant. Ask me about his skills, projects, rates or availability — I can also pass your project details on to him.", // Used as first chat message
+    chatSuggestions: [
+      // Clickable starters shown under the intro message
+      "What kind of AI projects does Jeremy work on?",
+      "What's his daily rate and availability?",
+      "I have a project, can you pass it on to Jeremy?",
+    ],
     aboutMe: `I am a passionate Data & AI Engineer. With over 9 years of professional experience, I have developed strong skills in building pipelines, AI integration, and automation. My MBA and engineering degree reflect my interest in entrepreneurship and technology.\n
 My specialties:\n
   • **Data Pipelines**: Designing and optimizing pipelines to fully leverage your data\n
@@ -52,6 +58,13 @@ Leverage my expertise to optimize your data and achieve your business goals. �
   ],
   projects: [
     // Use in Project page
+    {
+      title: "Shine MCP",
+      description:
+        "Independent MCP server that connects a Shine business bank account to AI assistants (Claude, ChatGPT…) in read-only mode, to browse accounts, transactions, invoices and receipts in natural language.",
+      image: "/public/shine-mcp.png",
+      url: "https://shine-mcp.jeremy-maisse.com",
+    },
     {
       title: "TraveLearn Blog",
       description:
@@ -378,4 +391,60 @@ Leverage my expertise to optimize your data and achieve your business goals. �
         "Yes, I regularly collaborate with international clients. Thanks to modern collaborative tools and clear communication, distance is not an obstacle to your project's success.",
     },
   ],
+  legal: {
+    // Used by the legal pages (client/src/pages/legal) and the AI assistant
+    lastUpdated: "2026-10-19",
+    publisher: {
+      name: "Jérémy Maisse",
+      status: "Sole trader (entrepreneur individuel, micro-entreprise)",
+      siret: "928 825 322 00011",
+      city: "Nice, France",
+      vat: "VAT not applicable, article 293 B of the French General Tax Code (CGI)",
+      email: "contact@jeremy-maisse.com",
+    },
+    publicationDirector: "Jérémy Maisse",
+    host: {
+      name: "Vercel Inc.",
+      address: "340 Pine Street, Suite 701, San Francisco, CA 94104, United States",
+      url: "https://vercel.com",
+    },
+    subProcessors: [
+      {
+        name: "Vercel Inc.",
+        purpose: "Website and API hosting",
+        location: "United States",
+        url: "https://vercel.com/legal/privacy-policy",
+      },
+      {
+        name: "Supabase, Inc.",
+        purpose: "Database (conversations, contact requests)",
+        location: "European Union (Paris, France — AWS eu-west-3)",
+        url: "https://supabase.com/privacy",
+      },
+      {
+        name: "Mistral AI",
+        purpose: "AI assistant language model (training on our data disabled)",
+        location: "European Union (France)",
+        url: "https://mistral.ai/terms",
+      },
+      {
+        name: "OpenAI, L.L.C.",
+        purpose: "Backup AI language model, only used if Mistral AI is unavailable",
+        location: "United States",
+        url: "https://openai.com/policies/privacy-policy",
+      },
+      {
+        name: "Resend (Plus Five Five, Inc.)",
+        purpose: "Delivery of contact and lead emails to Jeremy",
+        location: "United States",
+        url: "https://resend.com/legal/privacy-policy",
+      },
+    ],
+    retention: {
+      chatConversations: "60 days after the message was sent",
+      contactRequests: "3 years after the last contact",
+      rateLimitCounters: "24 hours (IP address stored only as an irreversible hash)",
+      browserId: "Until you clear your browser storage or start a new conversation",
+    },
+  },
 };

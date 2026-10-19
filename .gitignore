@@ -10,3 +10,4 @@ logs/*
 .vercel
 /.vs
 .claude
+evals/results/

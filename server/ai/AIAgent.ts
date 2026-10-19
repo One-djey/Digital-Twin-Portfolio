@@ -2,6 +2,7 @@ import { OpenAIAPI } from "./APIs/OpenAI.ts";
 import { MistralAPI } from "./APIs/Mistral.ts";
 import type { AiApiInterface } from "./APIs/AiApiInterface.ts";
 import type { AiChatMessage } from "../../shared/schema.ts";
+import type { RunOptions, RunResult } from "./types.ts";
 
 // Instancie l'implémentation provider correspondant au préfixe du nom de modèle.
 function createApiInstance(
@@ -99,5 +100,24 @@ export abstract class AIAgent {
 
   public async getResponse(messages: AiChatMessage[]): Promise<string> {
     return this.callAPI(messages);
+  }
+
+  // TEMPORARY shim matching the RunOptions/RunResult contract so routes and
+  // evals can be built against it; replaced by the real streaming tool loop.
+  public async run(
+    history: AiChatMessage[],
+    options: RunOptions = {},
+  ): Promise<RunResult> {
+    const start = Date.now();
+    const text = await this.callAPI(history);
+    options.onText?.(text);
+    return {
+      text,
+      model: this.model,
+      usage: { inputTokens: 0, outputTokens: 0 },
+      finishReason: "stop",
+      latencyMs: Date.now() - start,
+      toolCalls: [],
+    };
   }
 }
