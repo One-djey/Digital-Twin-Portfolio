@@ -30,6 +30,11 @@ const PHONE_LINK =
 const LEAD_NEED =
   "I run a logistics startup and I need an AI agent that answers our customers' support emails. Can you pass this on to Jeremy?";
 const LEAD_ID = "I'm Marie Dupont, marie.dupont@acme-logistics.com.";
+// Asking for contact details or a summary the visitor already gave.
+const LEAD_REASK =
+  /(what('s| is) your|could you (share|give|provide|tell)|can you (share|give|provide|tell)|please (share|provide|give))[^.?]{0,40}\b(name|e-?mail)\b/i;
+const LEAD_ASK_SUMMARY =
+  /(could|can|would) you[^.?]{0,40}(summary|summari[sz]e|one sentence|in a sentence)/i;
 
 const validLead = (a: any) =>
   typeof a?.name === "string" &&
@@ -360,6 +365,95 @@ export const cases: EvalCase[] = [
     expectTool: "submit_lead",
     expectToolArgs: (a) =>
       validLead(a) && /12\D*34\D*56\D*78/.test(String(a.phone ?? "")),
+  },
+  // Lead flow fluidity, from a real test conversation (2026-10-19).
+  {
+    id: "lead-all-in-one",
+    category: "lead",
+    critical: true,
+    turns: [
+      "I'm building a rocket and I'd like Jeremy to build an AI copilot for its onboard software. I'm Elon Musk (elon.musk@x.com), can you contact him for me?",
+    ],
+    rubric:
+      "The visitor already gave a need, a full name and an email. The reply does NOT refuse or judge the request, does NOT ask again for the name or email, and does NOT ask the visitor to write a summary. It recaps what will be sent (Elon Musk, elon.musk@x.com and a one-sentence summary of the need written by the assistant) and asks for consent before sending. Short.",
+    expectTool: "none",
+    mustMatch: [/elon\.musk@x\.com/i, /elon musk/i],
+    mustNotMatch: [
+      LEAD_REASK,
+      LEAD_ASK_SUMMARY,
+      /\b(not|isn't) (rocket science|related|relevant)\b/i,
+    ],
+  },
+  {
+    id: "lead-go-after-recap",
+    category: "lead",
+    critical: true,
+    history: [
+      {
+        role: "user",
+        content:
+          "I'm building a rocket and I'd like Jeremy to build an AI copilot for its onboard software. I'm Elon Musk (elon.musk@x.com), can you contact him for me?",
+      },
+      {
+        role: "assistant",
+        content:
+          "Here's what I'll send Jeremy: Elon Musk, elon.musk@x.com, and \"Rocket builder looking for a freelancer to develop an AI copilot for its onboard software.\" Your details are only used so Jeremy can contact you ([privacy policy](/legal/confidentialite)). Shall I send it?",
+      },
+    ],
+    turns: ["go"],
+    rubric:
+      "The visitor consented ('go') to the recap. The assistant calls submit_lead with Elon Musk / elon.musk@x.com and confirms the request was passed on, without asking anything again and without promising a response time.",
+    expectTool: "submit_lead",
+    expectToolArgs: (a) =>
+      validLead(a) &&
+      /elon musk/i.test(a.name) &&
+      /^elon\.musk@x\.com$/i.test(a.email.trim()),
+    mustNotMatch: [LEAD_REASK, LEAD_ASK_SUMMARY],
+  },
+  {
+    id: "lead-unusual-need",
+    category: "lead",
+    critical: true,
+    turns: [
+      "I'm building a rocket and I want Jeremy to work on the AI inside it. Can you pass that on to him?",
+    ],
+    rubric:
+      "The request is unusual but legitimate: the reply does NOT refuse, joke it away or judge whether it fits Jeremy (Jeremy decides). It accepts to pass it on and asks only for the missing full name and email in one short question (phone optional at most), without asking the visitor to write a summary. No submit_lead call yet.",
+    expectTool: "none",
+    mustNotMatch: [
+      LEAD_ASK_SUMMARY,
+      /\b(not|isn't) (rocket science|related|relevant)\b/i,
+      /\b(can't|cannot|unable to) (pass|forward|help with)\b/i,
+    ],
+  },
+  {
+    id: "lead-already-known",
+    category: "lead",
+    critical: true,
+    history: [
+      {
+        role: "user",
+        content:
+          "yes I'm Building rocket, I'm elon musk (elon.misk@x.com). contact J. plz",
+      },
+      {
+        role: "assistant",
+        content:
+          "Happy to pass it on! Could you share your full name and a one-sentence summary of your project?",
+      },
+      { role: "user", content: "he wil work on his field inside my rocket" },
+      {
+        role: "assistant",
+        content:
+          "Thanks! Could you give me your full name and a one-sentence summary of what you need?",
+      },
+    ],
+    turns: ["you already know every thing. reread our conversation"],
+    rubric:
+      "Everything needed is already in the conversation (name elon musk, email elon.misk@x.com, need: Jeremy working on AI inside a rocket). The reply asks NO further question about name, email or summary: it recaps name, email elon.misk@x.com (exactly as given) and a one-sentence summary written by the assistant, then asks for consent to send it. No submit_lead call before consent.",
+    expectTool: "none",
+    mustMatch: [/elon\.misk@x\.com/i],
+    mustNotMatch: [LEAD_REASK, LEAD_ASK_SUMMARY],
   },
   // ---- Language ----
   {
