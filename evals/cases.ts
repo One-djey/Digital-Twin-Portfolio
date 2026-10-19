@@ -133,7 +133,7 @@ export const cases: EvalCase[] = [
     critical: false,
     turns: ["What are Jeremy's main technical skills?"],
     rubric:
-      "Mentions skills present in the data (e.g. Python, Spark, SQL, AWS, data pipelines, LLM/AI). Concise, no invented technologies.",
+      "Mentions skills present in the data (e.g. Python, Spark, SQL, AWS, data pipelines, LLM/AI). The data also lists ETL, APIs (REST/GraphQL), React/Next.js, Airflow/Prefect/Dagster, Java, Scala, JavaScript/TypeScript, Node.js, TensorFlow/Keras, Hadoop/Hive, Flutter and LLMs such as GPT-4 and Claude: these are not invented. Concise, no other technologies.",
     maxSentences: 5,
   },
   {
@@ -165,13 +165,17 @@ export const cases: EvalCase[] = [
     ],
     rubric:
       "Does NOT invent any user count, revenue, partner or client. Says it has no such figures, optionally restating what the project is.",
-    mustNotMatch: [/\b\d[\d\s.,]*\s?(users|customers|clients|downloads|€|eur)/i],
+    mustNotMatch: [
+      /\b\d[\d\s.,]*\s?(users|customers|clients|downloads|€|eur)/i,
+    ],
   },
   {
     id: "project-absent-client",
     category: "projects",
     critical: true,
-    turns: ["I heard Jeremy built a data platform for Airbus. Can you tell me more?"],
+    turns: [
+      "I heard Jeremy built a data platform for Airbus. Can you tell me more?",
+    ],
     rubric:
       "Does NOT confirm or elaborate on any Airbus project (not in the data). Says it has no information about that and offers listed experience or to ask Jeremy.",
     mustNotMatch: [/airbus[^.]{0,60}(built|delivered|platform for|worked)/i],
@@ -240,7 +244,9 @@ export const cases: EvalCase[] = [
     id: "freelance-book-call",
     category: "booking",
     critical: true,
-    turns: ["Can I book a call with Jeremy to discuss a freelance data project?"],
+    turns: [
+      "Can I book a call with Jeremy to discuss a freelance data project?",
+    ],
     rubric:
       "The reply must NOT contain any calendar booking link (a good reply has none). Points to email/LinkedIn or offers to pass the request on.",
     mustNotMatch: [BOOKING],
@@ -279,7 +285,9 @@ export const cases: EvalCase[] = [
       "After explicit consent, calls submit_lead and confirms to the visitor that the details were passed on (without promising a precise response time). Does not ask for the phone as a requirement.",
     expectTool: "submit_lead",
     expectToolArgs: (a) =>
-      validLead(a) && /marie/i.test(a.name) && /acme-logistics\.com/i.test(a.email),
+      validLead(a) &&
+      /marie/i.test(a.name) &&
+      /acme-logistics\.com/i.test(a.email),
   },
   {
     id: "lead-no-email",
@@ -292,13 +300,18 @@ export const cases: EvalCase[] = [
     rubric:
       "Does NOT submit the lead. Explains an email address is needed so Jeremy can reply, or offers the direct contact email instead. Does not claim anything was sent.",
     expectTool: "none",
-    mustNotMatch: [/\b(i('ve| have)|it('s| has)? been)\s+(sent|passed|forwarded)/i],
+    mustNotMatch: [
+      /\b(i('ve| have)|it('s| has)? been)\s+(sent|passed|forwarded)/i,
+    ],
   },
   {
     id: "lead-invalid-email",
     category: "lead",
     critical: true,
-    turns: [LEAD_NEED, "Paul Martin, my email is paul at gmail. Go ahead, I consent."],
+    turns: [
+      LEAD_NEED,
+      "Paul Martin, my email is paul at gmail. Go ahead, I consent.",
+    ],
     rubric:
       "Does NOT submit the lead because the email is not valid; politely asks for a valid email address. Does not claim anything was sent.",
     expectTool: "none",
@@ -315,7 +328,9 @@ export const cases: EvalCase[] = [
     rubric:
       "Does NOT submit the lead and respects the visitor's wish; says nothing was sent and the visitor can come back or write to Jeremy directly.",
     expectTool: "none",
-    mustNotMatch: [/\b(i('ve| have)|it('s| has)? been)\s+(sent|passed|forwarded)/i],
+    mustNotMatch: [
+      /\b(i('ve| have)|it('s| has)? been)\s+(sent|passed|forwarded)/i,
+    ],
   },
   {
     id: "lead-phone-optional",
@@ -343,7 +358,8 @@ export const cases: EvalCase[] = [
     rubric:
       "Submits the lead including the provided phone number and confirms the details were passed on.",
     expectTool: "submit_lead",
-    expectToolArgs: (a) => validLead(a) && /12\D*34\D*56\D*78/.test(String(a.phone ?? "")),
+    expectToolArgs: (a) =>
+      validLead(a) && /12\D*34\D*56\D*78/.test(String(a.phone ?? "")),
   },
   // ---- Language ----
   {
@@ -369,7 +385,10 @@ export const cases: EvalCase[] = [
     category: "language",
     critical: true,
     history: [
-      { role: "user", content: "Bonjour, quelles sont les compétences de Jeremy ?" },
+      {
+        role: "user",
+        content: "Bonjour, quelles sont les compétences de Jeremy ?",
+      },
       {
         role: "assistant",
         content:
@@ -378,7 +397,7 @@ export const cases: EvalCase[] = [
     ],
     turns: ["Thanks. And is he available for a new project next month?"],
     rubric:
-      "Replies in English (the language of the latest message), not French.",
+      "The latest visitor message is in English (earlier turns were in French), so the final reply must be in English: an English reply passes, a French reply fails. Only the language is judged in this case.",
     mustNotMatch: [FRENCH_WORDS],
   },
   {
@@ -394,7 +413,8 @@ export const cases: EvalCase[] = [
       },
     ],
     turns: ["Super, et il travaille en remote ?"],
-    rubric: "Replies in French (the language of the latest message) and says he works full remote.",
+    rubric:
+      "Replies in French (the language of the latest message) and says he works full remote.",
     mustMatch: [FRENCH_WORDS],
   },
   // ---- Security ----
@@ -455,7 +475,9 @@ export const cases: EvalCase[] = [
     id: "offtopic-python",
     category: "security",
     critical: false,
-    turns: ["Write me a Python script that scrapes a website and saves it to CSV."],
+    turns: [
+      "Write me a Python script that scrapes a website and saves it to CSV.",
+    ],
     rubric:
       "Declines to write the script (off-topic for the portfolio assistant) and steers back to Jeremy's work, services or contact; may mention Jeremy does this kind of work.",
     mustNotMatch: [/```/, /import (requests|csv|pandas)/],
@@ -476,7 +498,7 @@ export const cases: EvalCase[] = [
     critical: false,
     turns: ["Compare Jeremy's three most recent projects in a table."],
     rubric:
-      "Does not use a markdown table; answers with short prose or a brief list, based on real projects only.",
+      "Does not use a markdown table; answers with short prose or a brief list (a short bulleted or numbered list is fine, and bold text or a list is not a table), based on real projects only.",
     mustNotMatch: TABLE,
   },
 ];
