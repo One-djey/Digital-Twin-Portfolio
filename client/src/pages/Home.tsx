@@ -14,8 +14,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-5rem)] flex flex-col max-w-3xl mx-auto px-4">
-      <div className="flex-1">
+    <div className="h-full flex flex-col max-w-3xl mx-auto px-4">
+      <div className="flex-1 min-h-0">
         <ChatWidget ref={chatWidgetRef} embedded={true} hideFrame={true} />
       </div>
     </div>

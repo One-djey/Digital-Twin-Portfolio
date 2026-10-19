@@ -14,7 +14,6 @@
 
 .chat-scroll-area {
   flex-grow: 1; /* Permet à la zone défilable de prendre tout l'espace disponible */
-  min-height: 100px; /* Hauteur minimale */
-  max-height: 70vh; /* Hauteur maximale */
+  min-height: 0; /* Lets the flex parent size it, so it scrolls instead of overflowing */
   overflow-y: auto; /* Permet le défilement */
 }

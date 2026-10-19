@@ -1,5 +1,6 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
+import { cn } from "@/lib/utils";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Helmet } from "react-helmet";
@@ -21,29 +22,43 @@ import { LEGAL_ROUTES } from "@shared/chat.ts";
 function Router() {
   return (
     <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/services" component={Services} />
-        <Route path="/projects" component={Projects} />
-        <Route path="/resume" component={Resume} />
-        <Route path="/about" component={About} />
-        <Route path="/contact" component={Contact} />
-        <Route path={LEGAL_ROUTES.notice} component={LegalNotice} />
-        <Route path={LEGAL_ROUTES.privacy} component={PrivacyPolicy} />
-        <Route component={NotFound} />
+      <Route path="/" component={Home} />
+      <Route path="/services" component={Services} />
+      <Route path="/projects" component={Projects} />
+      <Route path="/resume" component={Resume} />
+      <Route path="/about" component={About} />
+      <Route path="/contact" component={Contact} />
+      <Route path={LEGAL_ROUTES.notice} component={LegalNotice} />
+      <Route path={LEGAL_ROUTES.privacy} component={PrivacyPolicy} />
+      <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
+  // Home is a full-viewport chat: lock the layout to the viewport height so
+  // the conversation scrolls inside the widget and the footer stays below it.
+  const [location] = useLocation();
+  const isHomePage = location === "/";
+
   return (
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
       <Helmet>
-              <title>{portfolioData.personal.name} - {portfolioData.personal.title}</title>
-              <link rel="icon" href={portfolioData.personal.avatar} />
+        <title>
+          {portfolioData.personal.name} - {portfolioData.personal.title}
+        </title>
+        <link rel="icon" href={portfolioData.personal.avatar} />
       </Helmet>
-      <div className="min-h-screen flex flex-col bg-background">
+      <div
+        className={cn(
+          "flex flex-col bg-background",
+          isHomePage ? "h-dvh overflow-hidden" : "min-h-screen",
+        )}
+      >
         <Navbar />
-        <main className="container mx-auto flex-1">
+        <main
+          className={cn("container mx-auto flex-1", isHomePage && "min-h-0")}
+        >
           <Router />
         </main>
         <Footer />

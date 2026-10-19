@@ -13,10 +13,10 @@ export default function Footer() {
   const [location] = useLocation();
   const currentYear = new Date().getFullYear();
 
-  // Home is a full-height chat (h-[calc(100vh-5rem)] under the 65px navbar),
-  // which leaves 15px of viewport: the footer shrinks to a single 14px line
-  // there so the page never scrolls. Home has no floating chat button, so the
-  // side padding that keeps other pages clear of it is not needed either.
+  // Home is a full-viewport chat (App locks its height to the viewport): the
+  // footer is a single compact line below the chat there. Home has no
+  // floating chat button, so the side padding that keeps other pages clear of
+  // it is not needed either.
   const isHomePage = location === "/";
   const links = isHomePage ? legalLinks : [...legalLinks, contactLink];
 
@@ -25,7 +25,7 @@ export default function Footer() {
       className={cn(
         "text-muted-foreground",
         isHomePage
-          ? "h-3.5 overflow-hidden text-[11px] leading-[14px]"
+          ? "shrink-0 py-1.5 text-[11px] leading-[14px]"
           : "mt-12 border-t py-6 text-xs",
       )}
     >

@@ -39,7 +39,6 @@ import { Link, useLocation } from "wouter";
 import { portfolioData } from "../../../shared/portfolio.ts";
 import {
   CHAT_MAX_CONTENT_LENGTH,
-  LEGAL_ROUTES,
   type ChatFeedback,
   type ChatMessageDTO,
 } from "@shared/chat.ts";
@@ -386,10 +385,7 @@ const ChatContent = ({
         )}
       </form>
       <p className="text-center text-muted-foreground text-xs pb-2">
-        AI assistant — may make mistakes ·{" "}
-        <Link href={LEGAL_ROUTES.privacy} className="underline">
-          Privacy
-        </Link>
+        Powered by Mistral. AI may make mistakes.
       </p>
     </div>
   );

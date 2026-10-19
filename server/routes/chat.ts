@@ -29,7 +29,7 @@ import {
 // Max messages (user + assistant combined) per conversation.
 const MAX_MESSAGES = 50;
 // Number of most recent messages sent to the model.
-const HISTORY_WINDOW = 10;
+const HISTORY_WINDOW = 20;
 // Global budget of assistant replies per UTC day.
 const DEFAULT_DAILY_CAP = 300;
 
