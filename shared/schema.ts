@@ -39,6 +39,16 @@ export const contactMessages = pgTable("contact_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Table à ligne unique mise à jour par le health check : une vraie écriture
+// est nécessaire pour que Supabase (plan Free) compte l'activité et ne mette
+// pas le projet en pause, un simple `select 1` ne suffisant pas.
+export const heartbeat = pgTable("heartbeat", {
+  id: integer("id").primaryKey(),
+  lastPing: timestamp("last_ping", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Définition des relations
 export const usersRelations = relations(users, ({ many }) => ({
   messages: many(chatMessages),

@@ -16,6 +16,7 @@ import {
   serial,
   text,
   timestamp,
+  integer,
   uuid
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
@@ -38,6 +39,10 @@ var contactMessages = pgTable("contact_messages", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow()
+});
+var heartbeat = pgTable("heartbeat", {
+  id: integer("id").primaryKey(),
+  lastPing: timestamp("last_ping", { withTimezone: true }).notNull().defaultNow()
 });
 var usersRelations = relations(users, ({ many }) => ({
   messages: many(chatMessages),
@@ -80,7 +85,10 @@ var db = drizzle({ client });
 async function checkDatabaseHealth() {
   const start = Date.now();
   try {
-    await db.execute(sql`select 1`);
+    await db.insert(heartbeat).values({ id: 1 }).onConflictDoUpdate({
+      target: heartbeat.id,
+      set: { lastPing: sql`now()` }
+    });
     return { up: true, latencyMs: Date.now() - start };
   } catch (error) {
     return { up: false, latencyMs: Date.now() - start, error: error.message };

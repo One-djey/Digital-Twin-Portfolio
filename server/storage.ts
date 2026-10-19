@@ -1,12 +1,20 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { asc, eq, sql } from "drizzle-orm";
-import { chatMessages, contactMessages, users } from "../shared/schema.ts";
+import {
+  chatMessages,
+  contactMessages,
+  heartbeat,
+  users,
+} from "../shared/schema.ts";
 
 const client = postgres(process.env.DATABASE_URL!);
 export const db = drizzle({ client });
 
-// Vérifier que la base de données répond (utilisé par le health check)
+// Vérifier que la base de données répond (utilisé par le health check).
+// Upsert d'une ligne unique plutôt qu'un `select 1` : Supabase ne semble pas
+// compter les lectures triviales comme de l'activité, et la table ne grossit
+// jamais même si l'endpoint public est spammé.
 export async function checkDatabaseHealth(): Promise<{
   up: boolean;
   latencyMs: number;
@@ -14,7 +22,13 @@ export async function checkDatabaseHealth(): Promise<{
 }> {
   const start = Date.now();
   try {
-    await db.execute(sql`select 1`);
+    await db
+      .insert(heartbeat)
+      .values({ id: 1 })
+      .onConflictDoUpdate({
+        target: heartbeat.id,
+        set: { lastPing: sql`now()` },
+      });
     return { up: true, latencyMs: Date.now() - start };
   } catch (error: any) {
     return { up: false, latencyMs: Date.now() - start, error: error.message };

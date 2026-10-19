@@ -23,3 +23,14 @@ create table public.chat_messages (
   user_id uuid not null default gen_random_uuid (),
   constraint message_pkey primary key (id)
 ) TABLESPACE pg_default;
+
+-- Single-row table upserted by /api/health so Supabase counts real write activity
+-- and doesn't pause the Free-plan project. RLS on with no policy: unreachable via
+-- the public REST API, the server connects as postgres and bypasses it.
+create table if not exists public.heartbeat (
+  id integer not null,
+  last_ping timestamp with time zone not null default now(),
+  constraint heartbeat_pkey primary key (id)
+) TABLESPACE pg_default;
+
+alter table public.heartbeat enable row level security;
