@@ -16,7 +16,7 @@ A portfolio site that also serves as an AI "digital twin": a chat widget lets vi
 - `npm run db:push` — push the Drizzle schema (`shared/schema.ts`) to the database via `drizzle-kit`. **Don't run it against prod**: the Drizzle schema has drifted from the real tables created by `init_supabase.sql` (`serial` vs `bigint identity`, `timestamp` vs `timestamptz`, constraint names), so a push would try to alter existing tables. Apply targeted SQL in Supabase's SQL editor instead, and mirror it in `init_supabase.sql`.
 - `vercel build` / `vercel dev` / `vercel --prod` — build/run/deploy exactly as Vercel would (requires `vercel` CLI and `VERCEL=true` in `.env` for `vercel dev`).
 
-- `npm run eval` — run the chatbot eval suite (`evals/`): each case in `evals/cases.ts` (12 categories: rate, availability, stack, projects, contact, booking, lead, language, security, audiences, business, format) is played against the agent, then scored by an LLM judge (Mistral, temperature 0, 1-5 score) plus regex/tool-call checks. Needs `MISTRAL_API_KEY` only (tools are stubbed: no DB, no email). Options: `--case <id>` (repeatable), `--category <name>`; `JUDGE_MODEL` overrides the judge model (default `mistral-small-latest`, falling back to `ministral-14b-latest` on 429); `EVAL_TARGET=run` runs `digitalTwinAgent.run()` with a stubbed `submit_lead` executor (default `baseline` target is the legacy path, see "Known gaps" below). Calls are paced at >= 1.1 s (Mistral free tier ~1 req/s) with one retry on 429, so a full run takes a few minutes. Results are written to `evals/results/<timestamp>.json` (gitignored). Exit code: `0` ok, `1` a `critical` case failed or overall pass rate < 85 %, `2` no case selected / crash.
+- `npm run eval` — run the chatbot eval suite (`evals/`): each case in `evals/cases.ts` (12 categories: rate, availability, stack, projects, contact, booking, lead, language, security, audiences, business, format) is played against the agent, then scored by an LLM judge (Mistral, temperature 0, 1-5 score) plus regex/tool-call checks. Needs `MISTRAL_API_KEY` only (tools are stubbed: no DB, no email). Options: `--case <id>` (repeatable), `--category <name>`; `JUDGE_MODEL` overrides the judge model (default `mistral-small-latest`, falling back to `ministral-14b-latest` on 429); the target is `digitalTwinAgent.run()` with a stubbed `submit_lead` executor. Calls are paced at >= 1.1 s (Mistral free tier ~1 req/s) with one retry on 429, so a full run takes a few minutes. Results are written to `evals/results/<timestamp>.json` (gitignored). Exit code: `0` ok, `1` a `critical` case failed or overall pass rate < 85 %, `2` no case selected / crash.
 
 There is no unit test suite and no lint script configured (`npm run eval` is the only automated quality check, and it is LLM-based, so run it after any prompt/model change).
 
@@ -93,8 +93,3 @@ git push origin main   # Vercel's Git integration auto-deploys on push to main
 - `VERCEL` — set automatically on Vercel; gates the commented-out local static-serving code path.
 
 `init_supabase.sql` contains the initial schema to run in Supabase's SQL editor for a fresh database.
-
-## Known gaps
-
-- `evals/target.ts` still imports the removed `AiChatMessage` from `shared/schema.ts` and its default `baseline` target calls the removed `getResponse`; use `EVAL_TARGET=run` until it is switched to `run()`.
-- `shared/chat.ts` comments `ai_unavailable` as "SSE `error` or 502", but the route only ever sends it as an SSE `error` event.

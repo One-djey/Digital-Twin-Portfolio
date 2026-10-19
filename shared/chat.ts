@@ -42,7 +42,7 @@ export type ChatErrorCode =
   | "rate_limited" // 429
   | "conversation_limit" // 403: start a new conversation
   | "daily_cap" // 503: global daily budget reached
-  | "ai_unavailable" // AI provider failed (SSE `error` or 502)
+  | "ai_unavailable" // AI provider failed (SSE `error` event)
   | "internal_error"; // 500
 
 // Body of every JSON error response, and payload of the SSE `error` event.
