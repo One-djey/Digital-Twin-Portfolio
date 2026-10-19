@@ -20,7 +20,9 @@ export function requestLogger(req: Request, res: Response, next: NextFunction) {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
+      // Response bodies are only logged for errors (they are small and
+      // contain no visitor content); successful bodies may hold chat messages.
+      if (capturedJsonResponse && res.statusCode >= 400) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
 
