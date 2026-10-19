@@ -4,13 +4,16 @@ import { cases, type EvalCase } from "./cases.ts";
 import { judge } from "./judge.ts";
 import { runTarget, targetName, type EvalMessage } from "./target.ts";
 
-const MIN_GAP_MS = 1100; // Mistral free tier: ~1 request/second
-const RETRY_DELAY_MS = 3000;
+// Mistral free tier: ~1 request/second, plus a per-minute budget that a full
+// run exceeds at 1.1 s spacing (429 "Rate limit exceeded", code 1300), which
+// silently pushes the target down to a weaker fallback model mid-run.
+const MIN_GAP_MS = Number(process.env.EVAL_MIN_GAP_MS ?? 2500);
+const RETRY_DELAY_MS = 10_000;
 const PASS_RATE_THRESHOLD = 0.85;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Spaces ANY two API calls (target and judge) and retries once on 429.
+// Spaces ANY two API calls (target and judge) and retries twice on 429.
 let lastCallAt = 0;
 async function paced<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt++) {
@@ -23,7 +26,7 @@ async function paced<T>(fn: () => Promise<T>): Promise<T> {
       const msg = String(error);
       const status = (error as { statusCode?: number }).statusCode;
       const is429 = status === 429 || /\b429\b/.test(msg);
-      if (is429 && attempt === 0) {
+      if (is429 && attempt < 2) {
         await sleep(RETRY_DELAY_MS);
         continue;
       }
@@ -44,7 +47,8 @@ function parseArgs() {
 }
 
 function countSentences(text: string): number {
-  return text.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý*\-\d])/).filter((s) => s.trim()).length;
+  return text.split(/(?<=[.!?])\s+(?=[A-ZÀ-Ý*\-\d])/).filter((s) => s.trim())
+    .length;
 }
 
 type CaseResult = {
@@ -96,7 +100,9 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
   if (c.maxSentences && countSentences(finalReply) > c.maxSentences)
     failures.push(`more than ${c.maxSentences} sentences`);
   if (c.expectTool === "none" && toolCalls.length > 0)
-    failures.push(`unexpected tool call: ${toolCalls.map((t) => t.name).join(",")}`);
+    failures.push(
+      `unexpected tool call: ${toolCalls.map((t) => t.name).join(",")}`,
+    );
   if (c.expectTool === "submit_lead") {
     const lead = toolCalls.filter((t) => t.name === "submit_lead").at(-1);
     if (!lead) failures.push("submit_lead not called");
@@ -118,7 +124,7 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
     judgePass = v.pass;
   } catch (error) {
     reason = `judge error: ${String(error).slice(0, 120)}`;
-    failures.push("judge error");
+    failures.push(reason);
   }
   if (!judgePass && score !== null) failures.push(`judge: ${reason}`);
 
@@ -126,7 +132,10 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
     ...base,
     pass: failures.length === 0 && judgePass,
     score,
-    reason: failures.length && failures[0] !== `judge: ${reason}` ? failures[0] : reason,
+    reason:
+      failures.length && failures[0] !== `judge: ${reason}`
+        ? failures[0]
+        : reason,
     failures,
     conversation,
     finalReply,
@@ -134,12 +143,15 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
   };
 }
 
-const pct = (n: number, d: number) => (d ? `${Math.round((100 * n) / d)}% (${n}/${d})` : "n/a");
+const pct = (n: number, d: number) =>
+  d ? `${Math.round((100 * n) / d)}% (${n}/${d})` : "n/a";
 
 async function main() {
   const { ids, category } = parseArgs();
   const selected = cases.filter(
-    (c) => (!ids.length || ids.includes(c.id)) && (!category || c.category === category),
+    (c) =>
+      (!ids.length || ids.includes(c.id)) &&
+      (!category || c.category === category),
   );
   if (!selected.length) {
     console.error("No case selected");
@@ -197,7 +209,9 @@ async function main() {
   console.log(`\nResults: ${file}`);
 
   const critFailed = crit.length - critPassed;
-  process.exit(critFailed > 0 || passed / results.length < PASS_RATE_THRESHOLD ? 1 : 0);
+  process.exit(
+    critFailed > 0 || passed / results.length < PASS_RATE_THRESHOLD ? 1 : 0,
+  );
 }
 
 main().catch((e) => {
