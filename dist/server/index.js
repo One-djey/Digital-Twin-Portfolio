@@ -171,6 +171,7 @@ var OpenAIAPI = class _OpenAIAPI {
 // server/ai/APIs/Mistral.ts
 import "dotenv/config";
 import { Mistral } from "@mistralai/mistralai";
+import { MistralError } from "@mistralai/mistralai/models/errors";
 var MistralAPI = class _MistralAPI {
   client;
   model;
@@ -182,11 +183,26 @@ var MistralAPI = class _MistralAPI {
     "pixtral-large-latest",
     "mistral-small-latest",
     "codestral-latest",
+    "ministral-14b-latest",
     "ministral-8b-latest",
     "ministral-3b-latest",
     "mistral-embed",
     "mistral-moderation-latest"
   ];
+  // Tried in order after the configured model when it answers 429. Mistral
+  // gives no "latest free model" alias and doesn't expose plan coverage, so
+  // we walk down to cheaper models that the free plan does cover: in 2026,
+  // "mistral-small-latest" moved to Small 4, which has a 0 req/min quota on
+  // the free plan, while the Ministral family stays usable.
+  static RATE_LIMIT_FALLBACKS = [
+    "ministral-14b-latest",
+    "ministral-8b-latest"
+  ];
+  // Ordered candidates and the index of the one currently in use. The index
+  // is sticky for the lifetime of the instance (a Vercel function instance),
+  // so only the first request after a cold start pays for the 429s.
+  candidates;
+  activeIndex = 0;
   constructor(model, temperature, maxTokens) {
     const apiKey = process.env.MISTRAL_API_KEY;
     if (!apiKey) {
@@ -199,6 +215,10 @@ var MistralAPI = class _MistralAPI {
     }
     this.client = new Mistral({ apiKey });
     this.model = model;
+    this.candidates = [
+      model,
+      ..._MistralAPI.RATE_LIMIT_FALLBACKS.filter((m) => m !== model)
+    ];
     this.temperature = temperature;
     this.maxTokens = maxTokens;
   }
@@ -208,21 +228,34 @@ var MistralAPI = class _MistralAPI {
   // requête. Bump la valeur si le system prompt change de structure.
   static PROMPT_CACHE_KEY = "digital-twin-agent-v1";
   async getResponse(messages) {
-    try {
-      const chatResponse = await this.client.chat.complete({
-        model: this.model,
-        messages,
-        temperature: this.temperature,
-        maxTokens: this.maxTokens,
-        stream: false,
-        promptCacheKey: _MistralAPI.PROMPT_CACHE_KEY
-      });
-      return String(
-        chatResponse.choices?.[0]?.message?.content ?? "I apologize, I couldn't process that request."
-      );
-    } catch (error) {
-      throw new Error(`Mistral API request failed: ${error}`);
+    for (let i = this.activeIndex; i < this.candidates.length; i++) {
+      const model = this.candidates[i];
+      try {
+        const chatResponse = await this.client.chat.complete({
+          model,
+          messages,
+          temperature: this.temperature,
+          maxTokens: this.maxTokens,
+          stream: false,
+          promptCacheKey: _MistralAPI.PROMPT_CACHE_KEY
+        });
+        if (i !== this.activeIndex) {
+          console.warn(
+            `Mistral model "${this.candidates[this.activeIndex]}" rate-limited, switched to "${model}"`
+          );
+          this.activeIndex = i;
+          this.model = model;
+        }
+        return String(
+          chatResponse.choices?.[0]?.message?.content ?? "I apologize, I couldn't process that request."
+        );
+      } catch (error) {
+        const rateLimited = error instanceof MistralError && error.statusCode === 429;
+        if (rateLimited && i < this.candidates.length - 1) continue;
+        throw new Error(`Mistral API request failed (${model}): ${error}`);
+      }
     }
+    throw new Error("Mistral API request failed: no candidate model left");
   }
 };
 
@@ -296,8 +329,10 @@ var AIAgent = class {
 // shared/portfolio.ts
 var portfolioData = {
   ai_clone: {
+    // Preferred model. If Mistral answers 429 (e.g. no quota on the free plan),
+    // MistralAPI falls back to the Ministral family, see RATE_LIMIT_FALLBACKS.
     model: "mistral-small-latest",
-    // Use "gpt-4o-mini" or "mistral-small-latest" for cost-efficency performances
+    // Or "gpt-4o-mini"
     personality: "Friendly and professional, with deep knowledge of software development and AI technologies"
   },
   personal: {
@@ -747,6 +782,7 @@ import rateLimit from "express-rate-limit";
 async function registerRoutes(app2) {
   try {
     const MAX_MESSAGES = 50;
+    app2.set("trust proxy", 1);
     const chatRateLimiter = rateLimit({
       windowMs: 60 * 1e3,
       limit: 10,

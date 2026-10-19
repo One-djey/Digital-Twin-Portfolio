@@ -29,6 +29,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const MAX_MESSAGES = 50; // count both, user & assisant, messages.
 
+    // Vercel place un proxy devant la fonction : sans ça, req.ip est celle du
+    // proxy et express-rate-limit partage le même compteur entre tous les
+    // visiteurs. On fait confiance au premier hop (X-Forwarded-For).
+    app.set("trust proxy", 1);
+
     // Limite le nombre de requêtes IA par IP pour éviter les abus sur un
     // endpoint public qui déclenche des appels payants vers le LLM.
     const chatRateLimiter = rateLimit({

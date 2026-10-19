@@ -1,6 +1,8 @@
 export const portfolioData = {
   ai_clone: {
-    model: "mistral-small-latest", // Use "gpt-4o-mini" or "mistral-small-latest" for cost-efficency performances
+    // Preferred model. If Mistral answers 429 (e.g. no quota on the free plan),
+    // MistralAPI falls back to the Ministral family, see RATE_LIMIT_FALLBACKS.
+    model: "mistral-small-latest", // Or "gpt-4o-mini"
     personality:
       "Friendly and professional, with deep knowledge of software development and AI technologies",
   },

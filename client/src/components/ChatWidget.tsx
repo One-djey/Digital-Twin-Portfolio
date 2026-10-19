@@ -181,7 +181,7 @@ const ChatContent = ({
       </form>
       {!chatClass && (
         <p className="text-center text-muted-foreground text-xs">
-          Powered by {portfolioData.ai_clone.model}
+          Powered by Mistral AI
         </p>
       )}
     </div>
