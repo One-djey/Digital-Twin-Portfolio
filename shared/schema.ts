@@ -4,7 +4,9 @@ import {
   text,
   timestamp,
   integer,
+  smallint,
   uuid,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -15,19 +17,35 @@ export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name"),
   email: text("email"),
+  phone: text("phone"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Table des messages (chat)
-export const chatMessages = pgTable("chat_messages", {
-  id: serial("id").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  role: text("role").notNull(),
-  content: text("content").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// Table des messages (chat). The metrics columns are only filled on assistant
+// messages; `feedback` is the visitor's thumbs up (1) / down (-1).
+export const chatMessages = pgTable(
+  "chat_messages",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    model: text("model"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    cachedTokens: integer("cached_tokens"),
+    latencyMs: integer("latency_ms"),
+    finishReason: text("finish_reason"),
+    feedback: smallint("feedback"),
+  },
+  (table) => [
+    index("chat_messages_user_created_idx").on(table.userId, table.createdAt),
+    index("chat_messages_created_idx").on(table.createdAt),
+  ],
+);
 
 // Table des messages (formulaire de contact)
 export const contactMessages = pgTable("contact_messages", {
@@ -36,6 +54,8 @@ export const contactMessages = pgTable("contact_messages", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
+  // 'form' (contact page) or 'chat_lead' (submit_lead tool)
+  source: text("source").notNull().default("form"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -47,6 +67,16 @@ export const heartbeat = pgTable("heartbeat", {
   lastPing: timestamp("last_ping", { withTimezone: true })
     .notNull()
     .defaultNow(),
+});
+
+// Compteurs de rate limiting (fenêtre fixe), clé = préfixe + hash SHA-256 de
+// l'IP (jamais d'IP en clair). Purgés après 24 h par /api/health.
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  windowStart: timestamp("window_start", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  count: integer("count").notNull().default(1),
 });
 
 // Définition des relations
