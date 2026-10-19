@@ -1,10 +1,8 @@
 import { motion } from "framer-motion";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { FaGithub, FaTwitter, FaLinkedin, FaArrowDown } from "react-icons/fa";
+import { FaGithub, FaTwitter, FaLinkedin } from "react-icons/fa";
 
 export default function About() {
-  const currentYear = new Date().getFullYear();
-
   return (
     <div className="flex flex-col">
       <motion.div
@@ -54,26 +52,18 @@ export default function About() {
             original <span className="font-bold">copyright notice must be 
             included</span> in all copies. It disclaims liability for the authors.
           </p>
+          <p className="text-gray-600 text-lg mt-4">
+            Initially created by{" "}
+            <a
+              href="https://jeremy-maisse.com"
+              className="text-blue-600 hover:underline font-semibold"
+            >
+              Jeremy Maisse
+            </a>
+            .
+          </p>
         </section>
       </motion.div>
-
-      
-      <div className="flex justify-center">
-        <FaArrowDown className="text-gray-400" />
-      </div>
-
-      <footer className="text-center text-gray-500 p-4">
-        <p>
-          Initially created by{" "}
-          <a
-            href="https://jeremy-maisse.com"
-            className="text-gray-700 hover:underline"
-          >
-            Jeremy Maisse
-          </a>{" "}
-          &copy; {currentYear}
-        </p>
-      </footer>
     </div>
   );
 }
