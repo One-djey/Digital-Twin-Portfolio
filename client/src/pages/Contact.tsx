@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/form";
 import { apiRequest } from "@/lib/queryClient";
 import { getOrCreateUserId } from "@shared/uuidv4";
+import { LEGAL_ROUTES } from "@shared/chat.ts";
+import { Link } from "wouter";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -40,7 +42,7 @@ export default function Contact() {
   async function onSubmit(data: FormData) {
     try {
       const user_id = getOrCreateUserId();
-      const response = await apiRequest("POST", "/api/contact", {
+      await apiRequest("POST", "/api/contact", {
         user: {
           id: user_id,
           name: data.name,
@@ -51,17 +53,10 @@ export default function Contact() {
           message: data.message,
         },
       });
-      if (!response.ok) {
-        throw new Error("Failed to send contat form");
-      }
       toast({
         title: "Message sent!",
         description: `Thank you ${data.name} for your message. I'll get back to you soon!`,
       });
-
-      const subject = `Contact site web (${data.name})`;
-      const body = `${data.message}\n\n---\n${data.name} — ${data.email}`;
-      window.location.href = `mailto:contact@jeremy-maisse.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
       form.reset();
     } catch (error) {
@@ -136,6 +131,13 @@ export default function Contact() {
                 <Button type="submit" className="w-full">
                   Send Message
                 </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Your details are only used to answer your message — see our{" "}
+                  <Link href={LEGAL_ROUTES.privacy} className="underline">
+                    Privacy policy
+                  </Link>
+                  .
+                </p>
               </form>
             </Form>
           </CardContent>
