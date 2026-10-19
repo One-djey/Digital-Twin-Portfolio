@@ -1,7 +1,11 @@
 import { Link } from "wouter";
 import { portfolioData } from "@shared/portfolio.ts";
 import { LEGAL_ROUTES } from "@shared/chat.ts";
-import LegalPage, { LegalTable, lowerFirst, type LegalSection } from "./LegalPage";
+import LegalPage, {
+  LegalTable,
+  lowerFirst,
+  type LegalSection,
+} from "./LegalPage";
 
 const { legal } = portfolioData;
 const { publisher, retention } = legal;
@@ -19,9 +23,9 @@ const sections: LegalSection[] = [
       <>
         <p>
           This website is published by <strong>{publisher.name}</strong>,{" "}
-          {lowerFirst(publisher.status)}, SIRET {publisher.siret}, based in {publisher.city}
-          . He is the data controller for the processing described in this
-          policy.
+          {lowerFirst(publisher.status)}, SIRET {publisher.siret}, based in{" "}
+          {publisher.city}. He is the data controller for the processing
+          described in this policy.
         </p>
         <p>
           No data protection officer (DPO) has been appointed. For any question
@@ -63,8 +67,9 @@ const sections: LegalSection[] = [
           </li>
           <li>
             <strong>Server logs</strong>: technical data about requests (such as
-            date and time, requested page and response status), recorded by our
-            host. They never contain the content of your messages.
+            date and time, requested page, response status and IP address),
+            recorded by our host. They never contain the content of your
+            messages.
           </li>
         </ul>
         <p>
@@ -95,7 +100,8 @@ const sections: LegalSection[] = [
               </td>
               <td>
                 Steps taken at your request before a possible contract (Art.
-                6(1)(b))
+                6(1)(b)) or, for general questions, our legitimate interest in
+                presenting {publisher.name}'s work (Art. 6(1)(f))
               </td>
             </tr>
             <tr>
