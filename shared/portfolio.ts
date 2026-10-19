@@ -62,7 +62,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       title: "Shine MCP",
       description:
         "Independent MCP server that connects a Shine business bank account to AI assistants (Claude, ChatGPTâ€¦) in read-only mode, to browse accounts, transactions, invoices and receipts in natural language.",
-      image: "/public/shine-mcp.png",
+      image: "/public/shine-mcp.jpg",
       url: "https://shine-mcp.jeremy-maisse.com",
     },
     {
