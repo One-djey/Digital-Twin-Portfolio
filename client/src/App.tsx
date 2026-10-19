@@ -10,9 +10,13 @@ import Projects from "@/pages/Projects";
 import Resume from "@/pages/Resume";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
+import LegalNotice from "@/pages/legal/LegalNotice";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import { portfolioData } from "../../shared/portfolio.ts";
+import { LEGAL_ROUTES } from "@shared/chat.ts";
 
 function Router() {
   return (
@@ -23,6 +27,8 @@ function Router() {
         <Route path="/resume" component={Resume} />
         <Route path="/about" component={About} />
         <Route path="/contact" component={Contact} />
+        <Route path={LEGAL_ROUTES.notice} component={LegalNotice} />
+        <Route path={LEGAL_ROUTES.privacy} component={PrivacyPolicy} />
         <Route component={NotFound} />
     </Switch>
   );
@@ -35,11 +41,12 @@ function App() {
               <title>{portfolioData.personal.name} - {portfolioData.personal.title}</title>
               <link rel="icon" href={portfolioData.personal.avatar} />
       </Helmet>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen flex flex-col bg-background">
         <Navbar />
-        <main className="container mx-auto">
+        <main className="container mx-auto flex-1">
           <Router />
         </main>
+        <Footer />
         <ChatWidget />
         <Toaster />
       </div>
