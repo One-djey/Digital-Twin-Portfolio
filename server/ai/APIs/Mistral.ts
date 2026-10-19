@@ -167,6 +167,10 @@ export class MistralAPI implements AiApiInterface {
         const rateLimited =
           error instanceof MistralError && error.statusCode === 429;
         if (!emitted && rateLimited) {
+          // Only the preferred model's 429s are expected (no free quota).
+          if (this.knownGood.has(model)) {
+            console.warn(`Mistral 429 on "${model}": ${describeError(error)}`);
+          }
           // A model that already answered on this instance has a real quota:
           // its 429 is most likely the per-second limit, so wait and retry it
           // once rather than dropping to a weaker model for the whole TTL.
