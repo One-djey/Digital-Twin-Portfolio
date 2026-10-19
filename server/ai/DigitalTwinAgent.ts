@@ -14,6 +14,8 @@ class DigitalTwinAgent extends AIAgent {
       maxTokens: 600,
       buildSystemPrompt,
       tools: DIGITAL_TWIN_TOOLS,
+      toolSuccessFallbackText:
+        "Done, your request has been passed on to Jeremy.",
     });
   }
 }
