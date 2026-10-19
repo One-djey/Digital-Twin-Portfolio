@@ -128,11 +128,3 @@ export const insertUserSchema = createInsertSchema(users)
   .required({
     id: true,
   });
-
-// Rôle et message utilisés dans les échanges avec les providers IA
-export type ChatRole = "system" | "user" | "assistant";
-
-export type AiChatMessage = {
-  role: ChatRole;
-  content: string;
-};
