@@ -75,6 +75,10 @@ export type AIAgentConfig = {
   maxTokens: number;
   buildSystemPrompt: (now: Date) => string;
   tools?: ToolDefinition[];
+  // Sent instead of failing when the model ends with an empty answer after a
+  // successful tool call: the side effect already happened (e.g. a lead was
+  // emailed), so an error would make the visitor retry and duplicate it.
+  toolSuccessFallbackText?: string;
 };
 
 const toolError = (error: string) => JSON.stringify({ ok: false, error });
@@ -135,17 +139,23 @@ export abstract class AIAgent {
     };
     const toolCallsLog: RunResult["toolCalls"] = [];
     let fullText = "";
-    // Text emitted by earlier rounds is separated from the next round's.
+    // Set at the start of every round after the first, so that the text of
+    // an earlier round is separated from the next round's first delta.
+    let roundStart = false;
     const onText = (delta: string) => {
-      if (fullText && !/\s$/.test(fullText) && !/^\s/.test(delta)) {
-        fullText += "\n\n";
-        options.onText?.("\n\n");
+      if (roundStart) {
+        roundStart = false;
+        if (fullText && !/\s$/.test(fullText) && !/^\s/.test(delta)) {
+          fullText += "\n\n";
+          options.onText?.("\n\n");
+        }
       }
       fullText += delta;
       options.onText?.(delta);
     };
 
     for (let round = 0; ; round++) {
+      roundStart = round > 0;
       const allowTools = tools.length > 0 && round < MAX_TOOL_ROUNDS;
       const result = await this.complete(messages, {
         tools: allowTools ? tools : undefined,
@@ -158,7 +168,11 @@ export abstract class AIAgent {
 
       if (!allowTools || result.toolCalls.length === 0) {
         if (!fullText.trim()) {
-          throw new Error("AI provider returned an empty answer");
+          const fallbackText = this.config.toolSuccessFallbackText;
+          if (!fallbackText || !toolCallsLog.some((call) => call.ok)) {
+            throw new Error("AI provider returned an empty answer");
+          }
+          onText(fallbackText);
         }
         return {
           text: fullText,

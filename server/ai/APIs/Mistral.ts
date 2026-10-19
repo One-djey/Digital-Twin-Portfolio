@@ -17,6 +17,22 @@ import type {
 } from "../types.ts";
 
 const REQUEST_TIMEOUT_MS = 30_000;
+const RATE_LIMIT_RETRY_DELAY_MS = 1200;
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      },
+      { once: true },
+    );
+  });
+}
 
 // Retries only transient server errors, with the SDK's exponential backoff.
 // 429 is deliberately excluded: it is handled by walking down
@@ -81,6 +97,8 @@ export class MistralAPI implements AiApiInterface {
   private candidates: string[];
   private activeIndex = 0;
   private activeSince = 0;
+  // Models that answered at least once on this instance.
+  private knownGood = new Set<string>();
 
   constructor(model: string, temperature: number, maxTokens: number) {
     const apiKey = process.env.MISTRAL_API_KEY;
@@ -122,6 +140,7 @@ export class MistralAPI implements AiApiInterface {
     options: StreamOptions = {},
   ): Promise<CompletionResult> {
     const start = this.currentIndex();
+    let retriedKnownGood = false;
     for (let i = start; i < this.candidates.length; i++) {
       const model = this.candidates[i];
       let emitted = false;
@@ -134,6 +153,7 @@ export class MistralAPI implements AiApiInterface {
           },
         });
 
+        this.knownGood.add(model);
         if (i !== this.activeIndex) {
           console.warn(
             `Mistral model "${this.candidates[this.activeIndex]}" rate-limited, switched to "${model}"`,
@@ -146,8 +166,17 @@ export class MistralAPI implements AiApiInterface {
         // Switching models is only safe while the visitor has seen nothing.
         const rateLimited =
           error instanceof MistralError && error.statusCode === 429;
-        if (!emitted && rateLimited && i < this.candidates.length - 1) {
-          continue;
+        if (!emitted && rateLimited) {
+          // A model that already answered on this instance has a real quota:
+          // its 429 is most likely the per-second limit, so wait and retry it
+          // once rather than dropping to a weaker model for the whole TTL.
+          if (this.knownGood.has(model) && !retriedKnownGood) {
+            retriedKnownGood = true;
+            await sleep(RATE_LIMIT_RETRY_DELAY_MS, options.signal);
+            i--;
+            continue;
+          }
+          if (i < this.candidates.length - 1) continue;
         }
         throw new Error(
           `Mistral API request failed (${model}): ${describeError(error)}`,
