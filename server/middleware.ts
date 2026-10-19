@@ -43,8 +43,13 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ) {
-  const status = err.status || err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-  res.status(status).json({ message });
-  throw err;
+  const status: number = err.status || err.statusCode || 500;
+  // Same shape as ChatErrorBody; never leak internal error details.
+  const body =
+    status < 500
+      ? { code: "invalid_request", message: "Invalid request." }
+      : { code: "internal_error", message: "Internal Server Error" };
+  console.error(`Unhandled error (${status}): ${err?.message ?? err}`);
+  if (res.headersSent) return;
+  res.status(status).json(body);
 }

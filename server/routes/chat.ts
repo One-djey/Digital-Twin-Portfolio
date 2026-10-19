@@ -37,7 +37,8 @@ type MessageRow = Awaited<ReturnType<typeof getAllUserMessages>>[number];
 
 function toDTO(row: MessageRow): ChatMessageDTO {
   return {
-    id: row.id,
+    // postgres-js returns bigint identity columns as strings at runtime.
+    id: Number(row.id),
     role: row.role === "assistant" ? "assistant" : "user",
     content: row.content,
     createdAt: (row.createdAt ?? new Date()).toISOString(),
