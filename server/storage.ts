@@ -196,8 +196,8 @@ export async function setMessageFeedback(
   userId: string,
   messageId: number,
   rating: 1 | -1 | null,
-): Promise<boolean> {
-  const rows = await db
+): Promise<{ createdAt: Date | null } | null> {
+  const [row] = await db
     .update(chatMessages)
     .set({ feedback: rating })
     .where(
@@ -207,13 +207,44 @@ export async function setMessageFeedback(
         eq(chatMessages.role, "assistant"),
       ),
     )
-    .returning({ id: chatMessages.id });
-  return rows.length > 0;
+    .returning({ createdAt: chatMessages.createdAt });
+  return row ?? null;
+}
+
+// Id of the user message that started the turn answered by this assistant
+// message (the latest user message before it), or null.
+export async function getTurnUserMessageId(
+  userId: string,
+  assistantMessageId: number,
+): Promise<number | null> {
+  const [row] = await db
+    .select({ id: chatMessages.id })
+    .from(chatMessages)
+    .where(
+      and(
+        eq(chatMessages.userId, userId),
+        eq(chatMessages.role, "user"),
+        lt(chatMessages.id, assistantMessageId),
+      ),
+    )
+    .orderBy(desc(chatMessages.id))
+    .limit(1);
+  return row ? Number(row.id) : null;
 }
 
 // Supprimer les messages d'un utilisateur spécifique
-export async function resetUserMessages(userId: string) {
-  await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
+// Returns the ids of the deleted user messages (one per chat turn).
+export async function resetUserMessages(userId: string): Promise<number[]> {
+  const rows = await db
+    .delete(chatMessages)
+    .where(eq(chatMessages.userId, userId))
+    .returning({ id: chatMessages.id, role: chatMessages.role });
+  return userMessageIds(rows);
+}
+
+function userMessageIds(rows: { id: number; role: string }[]): number[] {
+  // postgres-js returns bigint identity columns as strings at runtime.
+  return rows.filter((row) => row.role === "user").map((row) => Number(row.id));
 }
 
 // Ajouter un message de contact ('form') ou un lead du chat ('chat_lead')
@@ -249,14 +280,21 @@ export type PurgeResult = {
   rateLimits: number;
 };
 
+export type PurgeOutcome = {
+  result: PurgeResult;
+  // Ids of the purged user messages (one per chat turn), not part of the
+  // public health report.
+  expiredUserMessageIds: number[];
+};
+
 // Rétention : conversations 60 jours, contacts/leads 3 ans, utilisateurs
 // sans plus aucune donnée après 60 jours, compteurs de rate limit 24 h.
 // Appelé par /api/health (pingé toutes les 24 h).
-export async function purgeExpiredData(): Promise<PurgeResult> {
+export async function purgeExpiredData(): Promise<PurgeOutcome> {
   const chat = await db
     .delete(chatMessages)
     .where(lt(chatMessages.createdAt, sql`now() - interval '60 days'`))
-    .returning({ id: chatMessages.id });
+    .returning({ id: chatMessages.id, role: chatMessages.role });
   const contacts = await db
     .delete(contactMessages)
     .where(lt(contactMessages.createdAt, sql`now() - interval '3 years'`))
@@ -286,10 +324,13 @@ export async function purgeExpiredData(): Promise<PurgeResult> {
     .where(lt(rateLimits.windowStart, sql`now() - interval '24 hours'`))
     .returning({ key: rateLimits.key });
   return {
-    chatMessages: chat.length,
-    contactMessages: contacts.length,
-    users: orphanUsers.length,
-    rateLimits: limits.length,
+    result: {
+      chatMessages: chat.length,
+      contactMessages: contacts.length,
+      users: orphanUsers.length,
+      rateLimits: limits.length,
+    },
+    expiredUserMessageIds: userMessageIds(chat),
   };
 }
 

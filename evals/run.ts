@@ -2,7 +2,12 @@ import "dotenv/config";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { cases, type EvalCase } from "./cases.ts";
 import { judge } from "./judge.ts";
-import { runTarget, targetName, type EvalMessage } from "./target.ts";
+import {
+  runTarget,
+  targetName,
+  targetPrompt,
+  type EvalMessage,
+} from "./target.ts";
 
 // Mistral free tier: ~1 request/second, plus a per-minute budget that a full
 // run exceeds at 1.1 s spacing (429 "Rate limit exceeded", code 1300), which
@@ -160,7 +165,9 @@ async function main() {
   const unknown = ids.filter((id) => !cases.some((c) => c.id === id));
   if (unknown.length) console.error(`Unknown case ids: ${unknown.join(", ")}`);
 
-  console.log(`Target: ${targetName} — ${selected.length} case(s)\n`);
+  const prompt = await targetPrompt();
+  console.log(`Target: ${targetName} — ${selected.length} case(s)`);
+  console.log(`Prompt: ${prompt}\n`);
   const results: CaseResult[] = [];
   for (const c of selected) {
     const r = await runCase(c);
@@ -194,6 +201,7 @@ async function main() {
     JSON.stringify(
       {
         target: targetName,
+        prompt,
         date: new Date().toISOString(),
         summary: {
           overall: { passed, total: results.length },

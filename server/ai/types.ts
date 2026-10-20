@@ -54,11 +54,55 @@ export interface AiApiInterface {
 // to it. Must not throw for business failures: return `{"ok":false,...}`.
 export type ToolExecutor = (name: string, args: unknown) => Promise<string>;
 
+// Langfuse prompt version a system prompt was compiled from.
+export type PromptRef = { name: string; version: number; isFallback: boolean };
+
+export type SystemPrompt = {
+  text: string;
+  prompt?: PromptRef; // unset when built from the local template
+};
+
+// One model call or tool call of a run, recorded so that the caller can trace
+// the run afterwards (server/tracing.ts) once it knows how the turn ended.
+export type GenerationStep = {
+  type: "generation";
+  round: number;
+  attempt: "primary" | "fallback";
+  provider: AiApiInterface["provider"];
+  requestedModel: string; // model the provider started with
+  // Model that answered (may differ after a Mistral rate-limit fallback), or
+  // the requested one when the call failed.
+  model: string;
+  modelParameters: { temperature: number; maxTokens: number };
+  input: AiChatMessage[]; // messages as sent to the model
+  prompt?: PromptRef; // system prompt version
+  tools: string[];
+  startTime: Date;
+  completionStartTime?: Date; // first streamed text delta
+  endTime: Date;
+  result?: CompletionResult;
+  error?: string;
+};
+
+export type ToolStep = {
+  type: "tool";
+  round: number;
+  call: ToolCall;
+  output: string; // JSON string fed back to the model
+  ok: boolean;
+  startTime: Date;
+  endTime: Date;
+};
+
+export type RunStep = GenerationStep | ToolStep;
+
 export type RunOptions = {
   onText?: (delta: string) => void;
   signal?: AbortSignal;
   executeTool?: ToolExecutor;
   now?: Date;
+  // Filled with every step as the run progresses, including when it throws.
+  steps?: RunStep[];
 };
 
 export type RunResult = {
@@ -68,6 +112,7 @@ export type RunResult = {
   finishReason: string;
   latencyMs: number;
   toolCalls: { name: string; ok: boolean }[];
+  prompt?: PromptRef;
 };
 
 export const SUBMIT_LEAD_TOOL_NAME = "submit_lead";

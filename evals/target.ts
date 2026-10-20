@@ -26,3 +26,17 @@ export async function runTarget(
   });
   return { text: result.text, toolCalls };
 }
+
+// System prompt version the target runs on: the Langfuse version with label
+// LANGFUSE_PROMPT_LABEL (default "production"), or the local template.
+export async function targetPrompt(): Promise<string> {
+  const { buildSystemPrompt } = await import(
+    "../server/ai/prompts/digitalTwin.ts"
+  );
+  const { prompt } = await buildSystemPrompt(new Date());
+  if (!prompt) return "local template (Langfuse not configured)";
+  const label = process.env.LANGFUSE_PROMPT_LABEL || "production";
+  return prompt.isFallback
+    ? `local template (Langfuse fetch of label "${label}" failed)`
+    : `${prompt.name} v${prompt.version} (label "${label}")`;
+}

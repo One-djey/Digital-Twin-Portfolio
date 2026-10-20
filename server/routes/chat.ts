@@ -1,4 +1,5 @@
 import type { Express, NextFunction, Request, Response } from "express";
+import { waitUntil } from "@vercel/functions";
 import {
   chatFeedbackRequestSchema,
   chatRequestSchema,
@@ -9,7 +10,7 @@ import {
 } from "@shared/chat.ts";
 import { isUUID } from "@shared/uuidv4.ts";
 import { digitalTwinAgent } from "../ai/DigitalTwinAgent.ts";
-import { SUBMIT_LEAD_TOOL_NAME } from "../ai/types.ts";
+import { SUBMIT_LEAD_TOOL_NAME, type RunStep } from "../ai/types.ts";
 import { executeSubmitLead } from "../leads.ts";
 import { createLimiter } from "../rateLimitStore.ts";
 import {
@@ -21,10 +22,17 @@ import {
   deleteMessage,
   getAllUserMessages,
   getRecentUserMessages,
+  getTurnUserMessageId,
   resetUserMessages,
   setMessageFeedback,
   userExistsById,
 } from "../storage.ts";
+import {
+  deleteChatTraces,
+  scoreChatFeedback,
+  traceChatTurn,
+  type ChatTurnTrace,
+} from "../tracing.ts";
 
 // Max messages (user + assistant combined) per conversation.
 const MAX_MESSAGES = 50;
@@ -34,6 +42,10 @@ const HISTORY_WINDOW = 20;
 const DEFAULT_DAILY_CAP = 300;
 
 type MessageRow = Awaited<ReturnType<typeof getAllUserMessages>>[number];
+
+type TurnOutcome =
+  | Pick<Extract<ChatTurnTrace, { stored: true }>, "stored" | "reply" | "result">
+  | Pick<Extract<ChatTurnTrace, { stored: false }>, "stored" | "error">;
 
 function toDTO(row: MessageRow): ChatMessageDTO {
   return {
@@ -135,7 +147,12 @@ export function registerChatRoutes(app: Express) {
         sendError(res, 400, "invalid_request", "Invalid user ID.");
         return;
       }
-      await resetUserMessages(parsed.data.user_id);
+      const userMessageIds = await resetUserMessages(parsed.data.user_id);
+      // The privacy policy promises the reset deletes the conversation
+      // everywhere, Langfuse traces included.
+      await deleteChatTraces(userMessageIds).catch((error) =>
+        console.error("Langfuse trace deletion failed: " + error?.message),
+      );
       res.status(200).json([]);
     } catch (error: any) {
       console.error("Error resetting messages: " + error.message);
@@ -157,6 +174,19 @@ export function registerChatRoutes(app: Express) {
         return;
       }
       res.status(200).json({ ok: true });
+      waitUntil(
+        (async () => {
+          const userMessageId = await getTurnUserMessageId(user_id, message_id);
+          if (userMessageId === null) return;
+          await scoreChatFeedback({
+            userMessageId,
+            answeredAt: updated.createdAt ?? new Date(),
+            rating,
+          });
+        })().catch((error) =>
+          console.error("Langfuse feedback failed: " + error?.message),
+        ),
+      );
     } catch (error: any) {
       console.error("Error saving feedback: " + error.message);
       sendError(res, 500, "internal_error", "Something went wrong.");
@@ -176,6 +206,9 @@ export function registerChatRoutes(app: Express) {
 
       let streaming = false;
       let userMessageId: number | null = null;
+      // Set once the user message is stored: sends the turn's trace to
+      // Langfuse in the background (at most once per turn).
+      let traceTurn: ((outcome: TurnOutcome) => void) | undefined;
 
       try {
         if (!(await userExistsById(user_id))) {
@@ -207,6 +240,24 @@ export function registerChatRoutes(app: Express) {
         const [userRow] = await addMessage(user_id, "user", message.content);
         userMessageId = userRow.id;
 
+        const turnStart = new Date();
+        const steps: RunStep[] = [];
+        traceTurn = (outcome) => {
+          traceTurn = undefined;
+          waitUntil(
+            traceChatTurn({
+              userId: user_id,
+              // postgres-js returns bigint identity columns as strings.
+              userMessageId: Number(userRow.id),
+              userMessage: message.content,
+              startTime: turnStart,
+              endTime: new Date(),
+              steps,
+              ...outcome,
+            }),
+          );
+        };
+
         // Last HISTORY_WINDOW messages, trimmed so the first one is a user turn.
         const recent = await getRecentUserMessages(user_id, HISTORY_WINDOW);
         while (recent.length > 0 && recent[0].role !== "user") recent.shift();
@@ -234,7 +285,8 @@ export function registerChatRoutes(app: Express) {
           res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
         };
 
-        const failWithAiError = async () => {
+        const failWithAiError = async (reason: string) => {
+          traceTurn?.({ stored: false, error: reason });
           if (userMessageId !== null) {
             await deleteMessage(user_id, userMessageId).catch(() => {});
             userMessageId = null;
@@ -253,6 +305,7 @@ export function registerChatRoutes(app: Express) {
           result = await digitalTwinAgent.run(history, {
             onText: (text) => send("delta", { text }),
             signal: controller.signal,
+            steps,
             executeTool: async (name, args) => {
               if (name === SUBMIT_LEAD_TOOL_NAME) {
                 return executeSubmitLead(user_id, args);
@@ -264,19 +317,23 @@ export function registerChatRoutes(app: Express) {
           if (!controller.signal.aborted) {
             console.error("AI error: " + error?.message);
           }
-          await failWithAiError();
+          await failWithAiError(
+            controller.signal.aborted
+              ? "client_disconnected"
+              : `ai_unavailable: ${error?.message}`,
+          );
           return;
         }
 
         if (controller.signal.aborted) {
           // Client left: no reply to persist, don't keep an orphan message.
-          await failWithAiError();
+          await failWithAiError("client_disconnected");
           return;
         }
 
         if (!result.text.trim()) {
           console.error("AI error: empty reply");
-          await failWithAiError();
+          await failWithAiError("empty_reply");
           return;
         }
 
@@ -288,6 +345,7 @@ export function registerChatRoutes(app: Express) {
           latencyMs: result.latencyMs,
           finishReason: result.finishReason,
         });
+        traceTurn?.({ stored: true, reply: result.text, result });
 
         console.info(
           JSON.stringify({
@@ -310,6 +368,7 @@ export function registerChatRoutes(app: Express) {
         res.end();
       } catch (error: any) {
         console.error("Error processing chat: " + error?.message);
+        traceTurn?.({ stored: false, error: `internal_error: ${error?.message}` });
         if (userMessageId !== null) {
           await deleteMessage(user_id, userMessageId).catch(() => {});
         }

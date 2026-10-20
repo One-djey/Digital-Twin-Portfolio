@@ -393,7 +393,7 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
   ],
   legal: {
     // Used by the legal pages (client/src/pages/legal) and the AI assistant
-    lastUpdated: "2026-10-19",
+    lastUpdated: "2026-10-20",
     publisher: {
       name: "JÃ©rÃ©my Maisse",
       status: "Sole trader (entrepreneur individuel, micro-entreprise)",
@@ -432,6 +432,13 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
         purpose: "Backup AI language model, only used if Mistral AI is unavailable",
         location: "United States",
         url: "https://openai.com/policies/privacy-policy",
+      },
+      {
+        name: "Langfuse (ClickHouse group)",
+        purpose:
+          "Quality monitoring of the AI assistant (conversation traces; email addresses, phone numbers and the contact details you pass on are masked before sending)",
+        location: "European Union (Ireland â€” AWS eu-west-1)",
+        url: "https://langfuse.com/security",
       },
       {
         name: "Resend (Plus Five Five, Inc.)",
