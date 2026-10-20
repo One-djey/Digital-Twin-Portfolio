@@ -81,13 +81,32 @@ Add the environment variables:
 
 - `CHAT_DAILY_CAP` _(optional)_: maximum number of assistant replies per day, to cap your AI bill. Default: 300.
 
+- `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` _(optional)_: enable Langfuse tracing and prompt management, see below.
+
 Build and get your vercel app URL!
 
 You can also link an existing domain name or use as is.
 
 
+## Observability and prompt management with Langfuse (optional)
+
+[Langfuse](https://langfuse.com/) lets you read every conversation of your twin (model calls, tool calls, tokens, latency, errors, visitors' 👍/👎) and edit the assistant's instructions without redeploying. Everything works without it: no keys, no tracing, and the prompt comes from the code.
+
+1. Create a project on [Langfuse Cloud](https://cloud.langfuse.com) (EU region by default), then create an API key pair in *Settings > API Keys*.
+2. Set `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` (`https://cloud.langfuse.com` for the EU region) in your `.env` and on Vercel.
+3. Create the prompt in your project from the local template: `npm run prompt:push -- --label production`.
+
+**Tracing.** One trace per chat answer, grouped by conversation (*Sessions* view), with the feedback as a `thumbs_up` score. Email addresses and phone numbers are masked and the contact details passed on by the chat are never sent. Only answered messages keep their content, and the "New conversation" button and the 60-day retention purge also delete the matching traces. Langfuse is listed as a sub-processor in the `legal` block of `shared/portfolio.ts`: remove it there if you don't use it.
+
+**Prompt management.** The assistant's instructions are the Langfuse text prompt `digital-twin/system`; your facts stay in `shared/portfolio.ts` and are inserted as `{{variables}}`. The app uses the version labelled `production` (refreshed every minute), and falls back to the template in `server/ai/prompts/digitalTwin.ts` if Langfuse is unreachable. To change the prompt:
+
+1. Edit it in the Langfuse UI and give the new version the `candidate` label (or edit the local template and run `npm run prompt:push -- --label candidate -m "what changed"`).
+2. Test it: `LANGFUSE_PROMPT_LABEL=candidate npm run eval`.
+3. Move the `production` label to that version in Langfuse: the site uses it within a minute, no deploy needed.
+4. Copy the new text into `DIGITAL_TWIN_PROMPT_TEMPLATE` (`server/ai/prompts/digitalTwin.ts`) at your next commit, so the fallback stays up to date.
+
 ## Evals
 
-`npm run eval` plays a set of test conversations (rates, availability, lead collection, language switching, prompt injection...) against the assistant and scores the answers with an LLM judge. It needs `MISTRAL_API_KEY` and writes a report in `evals/results/`. Use `--case <id>` or `--category <name>` to run a subset, and `JUDGE_MODEL` to choose the judge. The command exits with a non-zero code if a critical case fails or the pass rate is below 85 %. Calls are spaced out to respect Mistral's free tier, so a full run takes a few minutes.
+`npm run eval` plays a set of test conversations (rates, availability, lead collection, language switching, prompt injection...) against the assistant and scores the answers with an LLM judge. It needs `MISTRAL_API_KEY` and writes a report in `evals/results/`. With the Langfuse keys set, it evaluates the Langfuse prompt labelled `production`, or the one named by `LANGFUSE_PROMPT_LABEL`, and prints which version it ran. Use `--case <id>` or `--category <name>` to run a subset, and `JUDGE_MODEL` to choose the judge. The command exits with a non-zero code if a critical case fails or the pass rate is below 85 %. Calls are spaced out to respect Mistral's free tier, so a full run takes a few minutes.
 
 # *Congrats, Your clone is online!*
