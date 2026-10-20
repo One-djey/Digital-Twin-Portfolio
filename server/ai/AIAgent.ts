@@ -4,8 +4,12 @@ import type {
   AiApiInterface,
   AiChatMessage,
   CompletionResult,
+  GenerationStep,
+  PromptRef,
   RunOptions,
   RunResult,
+  RunStep,
+  SystemPrompt,
   ToolCall,
   ToolDefinition,
   ToolExecutor,
@@ -73,7 +77,7 @@ export type AIAgentConfig = {
   model: string;
   temperature: number;
   maxTokens: number;
-  buildSystemPrompt: (now: Date) => string;
+  buildSystemPrompt: (now: Date) => Promise<SystemPrompt>;
   tools?: ToolDefinition[];
   // Sent instead of failing when the model ends with an empty answer after a
   // successful tool call: the side effect already happened (e.g. a lead was
@@ -124,11 +128,11 @@ export abstract class AIAgent {
   ): Promise<RunResult> {
     const start = Date.now();
     const tools = this.config.tools ?? [];
+    const systemPrompt = await this.config.buildSystemPrompt(
+      options.now ?? new Date(),
+    );
     const messages: AiChatMessage[] = [
-      {
-        role: "system",
-        content: this.config.buildSystemPrompt(options.now ?? new Date()),
-      },
+      { role: "system", content: systemPrompt.text },
       ...history,
     ];
 
@@ -161,6 +165,9 @@ export abstract class AIAgent {
         tools: allowTools ? tools : undefined,
         onText,
         signal: options.signal,
+        round,
+        steps: options.steps,
+        prompt: systemPrompt.prompt,
       });
       usage.inputTokens += result.usage.inputTokens;
       usage.outputTokens += result.usage.outputTokens;
@@ -181,6 +188,7 @@ export abstract class AIAgent {
           finishReason: result.finishReason,
           latencyMs: Date.now() - start,
           toolCalls: toolCallsLog,
+          prompt: systemPrompt.prompt,
         };
       }
 
@@ -190,12 +198,23 @@ export abstract class AIAgent {
         toolCalls: result.toolCalls,
       });
       for (const call of result.toolCalls) {
+        const startTime = new Date();
         const output = await this.executeToolCall(
           call,
           tools,
           options.executeTool,
         );
-        toolCallsLog.push({ name: call.name, ok: isOkResult(output) });
+        const ok = isOkResult(output);
+        toolCallsLog.push({ name: call.name, ok });
+        options.steps?.push({
+          type: "tool",
+          round,
+          call,
+          output,
+          ok,
+          startTime,
+          endTime: new Date(),
+        });
         messages.push({
           role: "tool",
           toolCallId: call.id,
@@ -215,17 +234,21 @@ export abstract class AIAgent {
       tools?: ToolDefinition[];
       onText: (delta: string) => void;
       signal?: AbortSignal;
+      round: number;
+      steps?: RunStep[];
+      prompt?: PromptRef;
     },
   ): Promise<CompletionResult> {
     let emitted = false;
-    const onText = (delta: string) => {
-      emitted = true;
-      options.onText(delta);
-    };
-
     let primaryError: unknown;
     try {
-      return await this.getPrimary().stream(messages, { ...options, onText });
+      return await this.streamRecorded(
+        this.getPrimary(),
+        "primary",
+        messages,
+        options,
+        () => (emitted = true),
+      );
     } catch (error) {
       primaryError = error;
     }
@@ -237,7 +260,66 @@ export abstract class AIAgent {
     console.error(
       `Primary AI provider failed, falling back to ${fallback.provider} (${fallback.model}): ${errorMessage(primaryError)}`,
     );
-    return fallback.stream(messages, { ...options, onText });
+    return this.streamRecorded(fallback, "fallback", messages, options);
+  }
+
+  // `api.stream()`, recording the call into `options.steps` when given.
+  private async streamRecorded(
+    api: AiApiInterface,
+    attempt: GenerationStep["attempt"],
+    messages: AiChatMessage[],
+    options: {
+      tools?: ToolDefinition[];
+      onText: (delta: string) => void;
+      signal?: AbortSignal;
+      round: number;
+      steps?: RunStep[];
+      prompt?: PromptRef;
+    },
+    onFirstText?: () => void,
+  ): Promise<CompletionResult> {
+    const step: GenerationStep = {
+      type: "generation",
+      round: options.round,
+      attempt,
+      provider: api.provider,
+      requestedModel: api.model,
+      model: api.model,
+      modelParameters: {
+        temperature: this.config.temperature,
+        maxTokens: this.config.maxTokens,
+      },
+      // Snapshot: `messages` keeps growing during the tool loop.
+      input: [...messages],
+      prompt: options.prompt,
+      tools: options.tools?.map((tool) => tool.name) ?? [],
+      startTime: new Date(),
+      endTime: new Date(),
+    };
+    const onText = (delta: string) => {
+      if (!step.completionStartTime) {
+        step.completionStartTime = new Date();
+        onFirstText?.();
+      }
+      options.onText(delta);
+    };
+
+    try {
+      const result = await api.stream(messages, {
+        tools: options.tools,
+        onText,
+        signal: options.signal,
+      });
+      step.result = result;
+      step.model = result.model;
+      return result;
+    } catch (error) {
+      step.error = errorMessage(error);
+      throw error;
+    } finally {
+      step.endTime = new Date();
+      options.steps?.push(step);
+    }
   }
 
   // Returns the JSON string fed back to the model. Never throws.

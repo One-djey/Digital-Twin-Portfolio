@@ -47,7 +47,9 @@ const sections: LegalSection[] = [
             browser's local storage (see section 9) to link your conversation to
             your browser; technical metadata about each answer (model used,
             number of tokens, response time, completion status); and your 👍/👎
-            feedback, if you give it.
+            feedback, if you give it. A trace of each answered exchange (your
+            message, the answer and these metadata) is also kept in our
+            monitoring tool, with email addresses and phone numbers masked.
           </li>
           <li>
             <strong>When you ask the assistant to pass your request on</strong>:
@@ -122,8 +124,8 @@ const sections: LegalSection[] = [
             </tr>
             <tr>
               <td>
-                Monitoring and improving the quality of answers (technical
-                metadata, feedback)
+                Monitoring and improving the quality of answers (conversation
+                traces, technical metadata, feedback)
               </td>
               <td>Legitimate interest (Art. 6(1)(f))</td>
             </tr>
@@ -211,7 +213,7 @@ const sections: LegalSection[] = [
             <tr>
               <td>
                 AI assistant conversations (messages, technical metadata,
-                feedback)
+                feedback), including their traces in our monitoring tool
               </td>
               <td>
                 {retention.chatConversations}. You can delete them earlier at
@@ -269,8 +271,9 @@ const sections: LegalSection[] = [
           passwords…) in the chat.
         </li>
         <li>
-          You can delete your conversation from our database at any time with
-          the <strong>"New conversation"</strong> button. A request already
+          You can delete your conversation from our database and our
+          monitoring tool at any time with the{" "}
+          <strong>"New conversation"</strong> button. A request already
           passed on to {publisher.name} with your consent is not affected: write
           to {mailto} to have it deleted.
         </li>
