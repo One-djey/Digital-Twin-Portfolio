@@ -70,6 +70,7 @@ git push origin main   # Vercel's Git integration auto-deploys on push to main
   - the span processor `mask` replaces emails/phone numbers everywhere and `submit_lead`'s `name`/`email`/`phone` are always `[redacted]`. Names typed in free text are NOT masked;
   - deletion uses `api.trace.deleteMultiple` in batches of 50 (async on Langfuse's side, ~15 min). The free Hobby plan has no automatic retention and allows ~50 deletion requests/day; a Langfuse outage during a reset/purge leaves orphan traces (logged). Langfuse Pro's project retention setting (60 days) would remove that gap.
   - Langfuse ships no Mistral prices: costs show as null unless custom model definitions are added in the Langfuse project.
+  - Dependencies: `package-lock.json` is gitignored, so Vercel resolves `package.json` ranges on every build. `@mistralai/mistralai`, `@langfuse/*` and the `@opentelemetry/*` packages are therefore pinned to exact, mutually compatible versions (Mistral's optional OTel peers and `@langfuse/otel`'s peers must agree, e.g. Mistral 2.7.0 wants `exporter-trace-otlp-http@^0.220.0`, so OTel is on 2.9.0 / 0.220.0). Upgrade them together and check a lockfile-free install (`npm install --package-lock-only` on a copy of `package.json`) before pushing.
 
 **Email** (`server/email.ts`): Resend, lazy client (the server boots without `RESEND_API_KEY`; sends then return `{ok:false}`). From `Jeremy Maisse Portfolio <portfolioData.personal.email>`, to the same address, `replyTo` = the visitor, user content HTML-escaped, Resend `idempotencyKey` per contact row.
 
