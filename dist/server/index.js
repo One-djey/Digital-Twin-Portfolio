@@ -816,6 +816,12 @@ Leverage my expertise to optimize your data and achieve your business goals. \u{
   projects: [
     // Use in Project page
     {
+      title: "Family Tree",
+      description: "Private family genealogy web app: 300+ relatives back to 18th century rebuilt from old family papers, with an auto-laid-out interactive tree, sourced profiles, documents and open questions.",
+      image: "/public/family-tree.jpg",
+      url: "https://genealogie.jeremy-maisse.com"
+    },
+    {
       title: "Shine MCP",
       description: "Independent MCP server that connects a Shine business bank account to AI assistants (Claude, ChatGPT\u2026) in read-only mode, to browse accounts, transactions, invoices and receipts in natural language.",
       image: "/public/shine-mcp.jpg",

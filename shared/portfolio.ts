@@ -59,6 +59,13 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
   projects: [
     // Use in Project page
     {
+      title: "Family Tree",
+      description:
+        "Private family genealogy web app: 300+ relatives back to 18th century rebuilt from old family papers, with an auto-laid-out interactive tree, sourced profiles, documents and open questions.",
+      image: "/public/family-tree.jpg",
+      url: "https://genealogie.jeremy-maisse.com",
+    },
+    {
       title: "Shine MCP",
       description:
         "Independent MCP server that connects a Shine business bank account to AI assistants (Claude, ChatGPTâ€¦) in read-only mode, to browse accounts, transactions, invoices and receipts in natural language.",
@@ -405,7 +412,8 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
     publicationDirector: "JÃ©rÃ©my Maisse",
     host: {
       name: "Vercel Inc.",
-      address: "340 Pine Street, Suite 701, San Francisco, CA 94104, United States",
+      address:
+        "340 Pine Street, Suite 701, San Francisco, CA 94104, United States",
       url: "https://vercel.com",
     },
     subProcessors: [
@@ -429,7 +437,8 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
       },
       {
         name: "OpenAI, L.L.C.",
-        purpose: "Backup AI language model, only used if Mistral AI is unavailable",
+        purpose:
+          "Backup AI language model, only used if Mistral AI is unavailable",
         location: "United States",
         url: "https://openai.com/policies/privacy-policy",
       },
@@ -450,8 +459,10 @@ Leverage my expertise to optimize your data and achieve your business goals. ðŸ“
     retention: {
       chatConversations: "60 days after the message was sent",
       contactRequests: "3 years after the last contact",
-      rateLimitCounters: "24 hours (IP address stored only as an irreversible hash)",
-      browserId: "Until you clear your browser storage or start a new conversation",
+      rateLimitCounters:
+        "24 hours (IP address stored only as an irreversible hash)",
+      browserId:
+        "Until you clear your browser storage or start a new conversation",
     },
   },
 };
